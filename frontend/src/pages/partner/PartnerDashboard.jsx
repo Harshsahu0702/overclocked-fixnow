@@ -503,60 +503,12 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
 };
 
 
-const WalletView = ({ stats }) => (
-    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 space-y-6">
-        <div className="bg-white border border-slate-100 p-12 rounded-[4rem] shadow-2xl relative overflow-hidden group">
-            <div className="absolute top-0 right-0 p-12 opacity-5 -mr-12 -mt-12 group-hover:rotate-12 transition-transform text-slate-900"><TrendingUp size={240} /></div>
-            <div className="relative z-10">
-                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.4em] leading-none mb-3 italic">Settled Assets</p>
-                <div className="flex items-baseline gap-3 mb-8">
-                    <span className="text-2xl font-black text-slate-200 italic">₹</span>
-                    <h2 className="text-5xl font-[1000] italic tracking-tighter leading-none text-slate-900">{stats?.walletBalance || '0'}</h2>
-                </div>
-                <div className="flex gap-4">
-                    <button className="flex-1 py-4 bg-black text-white rounded-2xl font-[1000] text-lg uppercase italic shadow-xl hover:scale-105 transition-all">Withdrawal Pipeline</button>
-                    <button className="w-16 h-16 bg-slate-50 text-slate-400 rounded-2xl flex items-center justify-center border border-slate-100 hover:bg-slate-100 transition-all shadow-sm"><Settings size={22} /></button>
-                </div>
-            </div>
-        </div>
+// Removed separate EarningsView and MiniChart in favor of a combined HistoryView.
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-lg relative overflow-hidden group">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Cycle Profit</p>
-                <p className="text-4xl font-[1000] italic tracking-tighter text-slate-900">₹8,450.00</p>
-                <div className="absolute bottom-0 right-0 p-6 opacity-[0.05] group-hover:scale-110 transition-transform text-slate-900"><Briefcase size={80} /></div>
-            </div>
-            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-lg relative overflow-hidden group">
-                <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4">Operator XP</p>
-                <p className="text-4xl font-[1000] italic tracking-tighter text-blue-600">1,240 XP</p>
-                <div className="absolute bottom-0 right-0 p-6 opacity-[0.05] group-hover:scale-110 transition-transform text-slate-900"><Award size={80} /></div>
-            </div>
-        </div>
 
-        <div className="bg-white rounded-[3.5rem] border border-slate-100 shadow-lg p-10">
-            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-8 italic">Settlement Nodes</h4>
-            <div className="space-y-4">
-                {[
-                    { label: 'Primary Vault', detail: 'HDFC • ****4512', icon: <Briefcase size={20} /> },
-                    { label: 'UPI Frequency', detail: 'Active • fixnow@okicici', icon: <Zap size={20} /> }
-                ].map((item, i) => (
-                    <div key={i} className="flex items-center justify-between p-6 bg-slate-50 rounded-[2rem] border border-slate-100 hover:bg-white hover:shadow-md transition-all cursor-pointer group">
-                        <div className="flex items-center gap-6">
-                            <div className="w-14 h-14 bg-white rounded-2xl flex items-center justify-center border border-slate-100 text-slate-300 group-hover:text-black group-hover:border-black/10 transition-all shadow-sm">{item.icon}</div>
-                            <div>
-                                <p className="text-xs font-black uppercase italic text-slate-800 mb-1">{item.label}</p>
-                                <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{item.detail}</p>
-                            </div>
-                        </div>
-                        <ChevronRight size={20} className="text-slate-200 group-hover:text-black transition-all" />
-                    </div>
-                ))}
-            </div>
-        </div>
-    </motion.div>
-);
 
-const HistoryView = ({ user }) => {
+
+const HistoryView = ({ user, stats }) => {
     const [ledger, setLedger] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -572,134 +524,177 @@ const HistoryView = ({ user }) => {
     }, [user._id]);
 
     return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 space-y-8 flex flex-col h-full bg-[#f8f9fa]">
-            <header className="flex items-end justify-between px-2">
-                <div>
-                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em] mb-2 italic">Session History</h2>
-                    <h1 className="text-4xl font-[1000] text-slate-900 tracking-tighter italic uppercase leading-none">Mission Logs</h1>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-8 space-y-12 flex flex-col h-full bg-[#f8f9fa] pb-40">
+            {/* Unified Earnings Header */}
+            <header className="bg-white p-12 rounded-[4rem] border border-slate-100 shadow-xl flex flex-col md:flex-row items-center justify-between gap-10 relative overflow-hidden">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.02] rotate-12 -mr-8 -mt-8"><TrendingUp size={200} /></div>
+                <div className="relative z-10">
+                    <div className="inline-flex items-center gap-3 px-3 py-1 bg-yellow-400 text-black text-[8px] font-black uppercase italic tracking-widest rounded-lg mb-4 shadow-lg">Revenue Account</div>
+                    <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.6em] mb-3 italic">Total Settled Balance</h2>
+                    <div className="flex items-baseline gap-4">
+                        <span className="text-4xl font-black text-slate-200 italic">₹</span>
+                        <h1 className="text-7xl font-[1000] italic tracking-tighter text-slate-900 leading-none">{(stats?.walletBalance || 0).toLocaleString('en-IN')}</h1>
+                    </div>
                 </div>
-                <div className="text-right">
-                    <p className="text-[10px] font-black text-slate-300 uppercase tracking-[0.2em] mb-1">Total Entries</p>
-                    <p className="text-xl font-black text-black italic">{ledger.length}</p>
+                <div className="flex flex-col gap-4 min-w-[220px]">
+                    <button className="w-full py-5 bg-black text-white rounded-2xl font-black text-lg uppercase italic shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
+                        Withdraw <ArrowRight size={20} />
+                    </button>
+                    <div className="flex items-center justify-center gap-4">
+                        <div className="flex flex-col items-center">
+                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 leading-none">Total Logs</span>
+                            <span className="text-sm font-black text-black">{ledger.length}</span>
+                        </div>
+                        <div className="w-[1px] h-6 bg-slate-100" />
+                        <div className="flex flex-col items-center">
+                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 leading-none">Verified ID</span>
+                            <Shield size={12} className="text-emerald-500" />
+                        </div>
+                    </div>
                 </div>
             </header>
 
-            <div className="flex-1 overflow-y-auto space-y-4 pr-4 custom-scrollbar">
-                {loading ? (
-                    <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-50">
-                        <Loader2 className="animate-spin text-black" size={48} />
-                        <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Decrypting Field Data...</p>
-                    </div>
-                ) : ledger.length > 0 ? (
-                    ledger.map((job, i) => (
-                        <div key={i} className="bg-white p-6 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:shadow-xl hover:border-black/5 transition-all shadow-sm">
-                            <div className="flex items-center gap-6">
-                                <div className="w-16 h-16 bg-slate-50 border border-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-black group-hover:text-white transition-all"><Wrench size={28} /></div>
-                                <div>
-                                    <h4 className="text-lg font-black text-slate-900 uppercase italic leading-none mb-2">{job.service}</h4>
-                                    <div className="flex items-center gap-3">
-                                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-tighter">{new Date(job.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                                        <div className="w-1 h-1 rounded-full bg-slate-200" />
-                                        <p className="text-[10px] font-black text-emerald-500 uppercase tracking-widest italic">Settled</p>
+            <div className="space-y-6">
+                <h3 className="px-4 text-[11px] font-[1000] text-slate-400 uppercase tracking-[0.5em] italic">Mission Transaction History</h3>
+                <div className="space-y-4">
+                    {loading ? (
+                        <div className="flex flex-col items-center justify-center py-24 gap-4 opacity-50">
+                            <Loader2 className="animate-spin text-black" size={48} />
+                            <p className="text-[10px] font-black uppercase tracking-[0.4em] text-slate-400">Decrypting Field Data...</p>
+                        </div>
+                    ) : ledger.length > 0 ? (
+                        ledger.map((job, i) => (
+                            <div key={i} className="bg-white p-8 rounded-[2.5rem] border border-slate-100 flex items-center justify-between group hover:shadow-2xl hover:border-black/5 transition-all shadow-sm">
+                                <div className="flex items-center gap-8">
+                                    <div className="w-18 h-18 bg-slate-50 border border-slate-50 rounded-2xl flex items-center justify-center text-slate-300 group-hover:bg-black group-hover:text-white transition-all shadow-inner"><Wrench size={32} /></div>
+                                    <div>
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <h4 className="text-xl font-black text-slate-900 uppercase italic tracking-tighter leading-none">{job.service}</h4>
+                                            <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 text-[7px] font-black rounded-full tracking-widest uppercase">Verified Completion</span>
+                                        </div>
+                                        <div className="flex items-center gap-4">
+                                            <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{new Date(job.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at {new Date(job.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}</p>
+                                            <div className="w-1 h-1 rounded-full bg-slate-200" />
+                                            <p className="text-[9px] font-black text-slate-300 uppercase tracking-widest">LOG_ID: {job._id.slice(-6).toUpperCase()}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="flex items-center gap-2 justify-end mb-2">
+                                        <span className="text-sm font-black text-slate-200 italic">₹</span>
+                                        <p className="text-4xl font-[1000] italic tracking-tighter text-slate-900">{job.finalPrice || job.basePrice}</p>
+                                    </div>
+                                    <div className="inline-flex px-4 py-1.5 bg-emerald-500/10 text-emerald-600 rounded-full border border-emerald-500/10">
+                                        <p className="text-[9px] font-black uppercase tracking-widest italic">Settled in Vault</p>
                                     </div>
                                 </div>
                             </div>
-                            <div className="text-right">
-                                <div className="flex items-center gap-2 justify-end mb-1">
-                                    <span className="text-sm font-black text-slate-200 italic">₹</span>
-                                    <p className="text-3xl font-[1000] italic tracking-tighter text-slate-900">{job.finalPrice || job.basePrice}</p>
-                                </div>
-                                <div className="inline-flex px-3 py-1 bg-slate-50 rounded-full border border-slate-100">
-                                    <p className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em]">LOG_ID: {job._id.slice(-6).toUpperCase()}</p>
-                                </div>
-                            </div>
+                        ))
+                    ) : (
+                        <div className="py-24 text-center opacity-10 flex flex-col items-center gap-4 text-slate-900">
+                            <History size={80} strokeWidth={1} />
+                            <p className="text-[10px] font-black uppercase tracking-[0.6em]">No Archived Sessions</p>
                         </div>
-                    ))
-                ) : (
-                    <div className="py-24 text-center opacity-10 flex flex-col items-center gap-4 text-slate-900">
-                        <History size={80} strokeWidth={1} />
-                        <p className="text-[10px] font-black uppercase tracking-[0.6em]">No Archived Sessions</p>
-                    </div>
-                )}
+                    )}
+                </div>
             </div>
         </motion.div>
     );
 };
 
-const ProfileView = ({ user, stats, logout }) => (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 space-y-8 max-w-4xl mx-auto bg-[#f8f9fa]">
-        <div className="bg-white p-12 rounded-[4.5rem] text-center border border-slate-100 relative group overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-slate-50 translate-y-[100%] group-hover:translate-y-0 transition-transform duration-1000 opacity-50" />
 
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-12 text-left">
+const ProfileView = ({ user, stats, logout }) => (
+    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 space-y-8 max-w-5xl mx-auto bg-[#f8f9fa]">
+        {/* Profile Identity Card */}
+        <div className="bg-white p-12 rounded-[5rem] border border-slate-100 relative group overflow-hidden shadow-2xl">
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-yellow-100/20 via-transparent to-transparent opacity-50" />
+            
+            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-16 text-left">
                 <div className="relative">
-                    <div className="w-48 h-48 bg-slate-100 rounded-[3rem] p-2 border border-slate-200 relative overflow-hidden flex items-center justify-center shadow-xl group-hover:border-black/20 transition-colors">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt="agent_pfp" className="w-full h-full object-cover rounded-[2.5rem]" />
-                        <div className="absolute inset-x-0 bottom-0 h-12 bg-black/80 backdrop-blur-md flex items-center justify-center group-hover:h-full transition-all duration-500 cursor-pointer">
-                            <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] opacity-0 group-hover:opacity-100 italic transition-opacity">Calibrate ID</p>
+                    <div className="w-56 h-56 bg-white rounded-[4rem] p-3 border-2 border-slate-100 relative overflow-hidden flex items-center justify-center shadow-3xl group-hover:border-black/10 transition-all duration-700">
+                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt="agent_pfp" className="w-full h-full object-cover rounded-[3.5rem]" />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm">
+                            <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] italic">Update Identity</p>
                         </div>
                     </div>
-                    <div className="absolute -bottom-4 -right-4 w-16 h-16 bg-black rounded-2xl flex items-center justify-center text-white shadow-2xl border-4 border-white">
-                        <Award size={32} />
+                    <div className="absolute -bottom-4 -right-4 w-18 h-18 bg-black rounded-3xl flex items-center justify-center text-white shadow-3xl border-8 border-white">
+                        <Award size={36} className="text-yellow-400" />
                     </div>
                 </div>
 
-                <div className="flex-1 space-y-6">
+                <div className="flex-1 space-y-8">
                     <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <span className="px-3 py-1 bg-yellow-400 text-black text-[9px] font-black uppercase italic tracking-widest rounded-lg">Verified Bhaiya</span>
-                            <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <div className="flex items-center gap-4 mb-4">
+                            <span className="px-4 py-1.5 bg-yellow-400 text-black text-[10px] font-black uppercase italic tracking-[0.2em] rounded-xl shadow-lg">OFFICIAL PARTNER</span>
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
+                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active Link</span>
+                            </div>
                         </div>
-                        <h2 className="text-6xl font-[1000] tracking-tighter italic uppercase text-slate-900 leading-none mb-4">{user?.name}</h2>
-                        <div className="flex flex-wrap gap-4">
-                            <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-3">
+                        <h2 className="text-7xl font-[1000] tracking-tighter italic uppercase text-slate-900 leading-none mb-4">{user?.name}</h2>
+                        <p className="text-slate-400 font-black text-xs uppercase tracking-[0.3em] italic">Partner ID: #{user?._id?.slice(-8).toUpperCase()}</p>
+                    </div>
+
+                    <div className="flex flex-wrap gap-6 border-t border-slate-50 pt-8">
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Contact String</span>
+                            <p className="text-md font-black italic text-slate-900">+91 {user?.phone}</p>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Bureau Status</span>
+                            <div className="flex items-center gap-2">
                                 <Shield size={14} className="text-emerald-500" />
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest">BUREAU VERIFIED</span>
+                                <p className="text-md font-black italic text-slate-900 uppercase">FULLY VERIFIED</p>
                             </div>
-                            <div className="px-4 py-2 bg-slate-50 border border-slate-100 rounded-xl flex items-center gap-3">
-                                <UserIcon size={14} className="text-blue-500" />
-                                <span className="text-[10px] font-black text-slate-500 uppercase tracking-widest leading-none">ELITE CLASS</span>
-                            </div>
+                        </div>
+                        <div className="flex flex-col">
+                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Deployment Date</span>
+                            <p className="text-md font-black italic text-slate-900">Oct 2024</p>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Details & Settings Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {[
-                { icon: <UserIcon size={22} />, label: 'Dossier Details', detail: 'Contact Intelligence' },
-                { icon: <Award size={22} />, label: 'Specializations', detail: `${stats?.skills?.length || 0} Modules Integrated` },
-                { icon: <FileText size={22} />, label: 'Neural Docs', detail: 'Encrypted Identification' },
-                { icon: <Settings size={22} />, label: 'System Params', detail: 'HUD Configuration' },
-                { icon: <LogOut size={22} />, label: 'Terminate Link', detail: 'Purge & Logout', danger: true, action: logout }
+                { icon: <UserIcon size={22} />, label: 'Personal Dossier', detail: 'Manage your primary records' },
+                { icon: <Award size={22} />, label: 'Mastered Skills', detail: `${stats?.skills?.length || 0} Professional Modules` },
+                { icon: <FileText size={22} />, label: 'Verified Documents', detail: 'KYC & Legal Identification' },
+                { icon: <Bell size={22} />, label: 'Interface Alerts', detail: 'Notification parameters' },
+                { icon: <Settings size={22} />, label: 'System Preferences', detail: 'App & Hardware tuning' },
+                { icon: <LogOut size={22} />, label: 'Terminate Uplink', detail: 'Secure session closure', danger: true, action: logout }
             ].map((item, i) => (
                 <button
                     key={i}
                     onClick={item.action}
-                    className={`p-8 rounded-[3rem] border flex items-center justify-between group transition-all duration-300 ${item.danger
+                    className={`p-10 rounded-[3.5rem] border-2 flex flex-col items-start gap-6 group transition-all duration-500 text-left ${item.danger
                             ? 'bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200'
-                            : 'bg-white border-slate-100 hover:border-black/10 hover:shadow-xl shadow-sm'
+                            : 'bg-white border-slate-50 hover:border-black/10 hover:shadow-2xl shadow-sm'
                         }`}
                 >
-                    <div className="flex items-center gap-6 text-left">
-                        <div className={`w-16 h-16 rounded-2xl flex items-center justify-center border transition-all duration-500 shadow-sm ${item.danger
-                                ? 'bg-red-500 text-white border-red-400'
-                                : 'bg-black text-white border-black/10 group-hover:bg-blue-600'
-                            }`}>
-                            {React.cloneElement(item.icon, { strokeWidth: 2.5 })}
-                        </div>
-                        <div>
-                            <span className={`text-md font-black uppercase tracking-tight block mb-1 ${item.danger ? 'text-red-500' : 'text-slate-900'}`}>{item.label}</span>
-                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic">{item.detail}</span>
-                        </div>
+                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 shadow-xl ${item.danger
+                            ? 'bg-red-500 text-white'
+                            : 'bg-black text-white group-hover:bg-yellow-400 group-hover:text-black group-hover:rotate-6'
+                        }`}>
+                        {React.cloneElement(item.icon, { strokeWidth: 2.5 })}
                     </div>
-                    <ChevronRight size={24} className={`transition-all duration-300 ${item.danger ? 'text-red-500' : 'text-slate-200 group-hover:text-black group-hover:translate-x-2'}`} />
+                    <div>
+                        <span className={`text-lg font-[1000] uppercase italic tracking-tighter block mb-1 ${item.danger ? 'text-red-500' : 'text-slate-900'}`}>{item.label}</span>
+                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic">{item.detail}</span>
+                    </div>
+                    {!item.danger && (
+                         <div className="mt-4 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                            <div className="w-0 group-hover:w-full h-full bg-slate-900 transition-all duration-1000" />
+                         </div>
+                    )}
                 </button>
             ))}
         </div>
     </motion.div>
 );
+
 
 
 const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
@@ -1157,10 +1152,9 @@ const PartnerDashboard = () => {
 
                 <nav className="flex-1 px-4 py-8 space-y-4">
                     {[
-                        { id: 'home', icon: <MapIcon />, label: 'Tactical Radar' },
-                        { id: 'wallet', icon: <Wallet />, label: 'Financial Intel' },
-                        { id: 'history', icon: <History />, label: 'Mission Ledger' },
-                        { id: 'profile', icon: <UserIcon />, label: 'Operator Hub' }
+                        { id: 'home', icon: <MapIcon />, label: 'Dashboard' },
+                        { id: 'history', icon: < IndianRupee />, label: 'Earnings' },
+                        { id: 'profile', icon: <UserIcon />, label: 'Profile' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -1298,8 +1292,7 @@ const PartnerDashboard = () => {
                             </div>
                         )}
 
-                        {activeTab === 'wallet' && <WalletView key="wallet" stats={stats} />}
-                        {activeTab === 'history' && <HistoryView key="history" user={user} />}
+                        {activeTab === 'history' && <HistoryView key="history" user={user} stats={stats} />}
                         {activeTab === 'profile' && <ProfileView key="profile" user={user} stats={stats} logout={handleLogout} />}
                     </AnimatePresence>
                 </div>

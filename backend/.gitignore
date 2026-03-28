@@ -1,2 +1,20 @@
+# Dependencies
+node_modules/
+
+# Logs (These often cause issues if committed to Git)
+*.log
+npm-debug.log*
+
+# Environment & Secrets (Crucial)
 .env
-node_modules
+.env.local
+
+# Build/Dist (If you ever compile your code)
+dist/
+dist-ssr/
+build/
+
+# IDE & OS clutter
+.vscode/
+.idea/
+.DS_Store
