@@ -10,6 +10,7 @@ const partnerProfileSchema = new mongoose.Schema({
     
     // Professional Details
     skills: [{ type: String }],
+    serviceCategory: { type: String }, // NEW
     aadhaar: { type: String },
     aadhaarPic: { type: String },
     selfie: { type: String },
@@ -26,6 +27,15 @@ const partnerProfileSchema = new mongoose.Schema({
     alternatePhone: { type: String },
     bio: { type: String },
     
+    // Mandatory Payment Profile (NEW)
+    upiId: { type: String },
+    qrCodeImage: { type: String },
+    acceptsCash: { type: Boolean, default: false },
+    bankName: { type: String },
+    
+    profileCompleted: { type: Boolean, default: false }, // NEW
+    subscriptionActive: { type: Boolean, default: false }, // NEW
+
     status: {
         type: String,
         enum: ["PENDING", "APPROVED", "REJECTED"],

@@ -3,6 +3,8 @@ const router = express.Router();
 const Job = require('../models/Job');
 const User = require('../models/User');
 const PartnerProfile = require('../models/PartnerProfile');
+const authMiddleware = require('../middleware/authMiddleware');
+const checkProfileCompleted = require('../middleware/checkProfileCompleted');
 
 // 1. Create Job & Dispatch to Nearest
 router.post('/create', async (req, res) => {
@@ -45,7 +47,7 @@ router.post('/create', async (req, res) => {
         // 2. Create Job
         const job = new Job({
             customerId,
-            partnerIds: targetPartnerIds, 
+            partnerIds: targetPartnerIds,
             service: serviceType || "General Service",
             description,
             imageUrl,
@@ -96,7 +98,7 @@ router.get('/active/:userId', async (req, res) => {
 
         // Prioritize actual engagements over pending offers
         const activeMission = jobs.find(j => ['ACCEPTED', 'ON_THE_WAY', 'IN_PROGRESS', 'COMPLETED'].includes(j.status));
-        
+
         // SELF-HEALING: If BUSY but no active job found, reset partner status
         if (!activeMission && role === 'partner') {
             const profile = await PartnerProfile.findById(req.params.userId);
@@ -137,29 +139,32 @@ router.get('/history/:userId', async (req, res) => {
 });
 
 // 3. Accept Job (Atomic First-Come-First-Served)
-router.post('/:id/accept', async (req, res) => {
+router.post('/:id/accept', authMiddleware, checkProfileCompleted, async (req, res) => {
     try {
-        const { partnerId } = req.body;
-        
+        const { partnerId } = req.body; // In PRO dashboard, we still send this but it must match req.user.id
+        if (req.user.id !== partnerId) {
+            return res.status(403).json({ success: false, message: "Unauthorized partner ID" });
+        }
+
         // ATOMIC UPDATE: Only update if status is still 'OFFERED'
         // This prevents race conditions where two partners accept at the same time
         const job = await Job.findOneAndUpdate(
             { _id: req.params.id, status: 'OFFERED' },
-            { 
-                $set: { 
-                    status: 'ACCEPTED', 
+            {
+                $set: {
+                    status: 'ACCEPTED',
                     partnerId: partnerId,
                     otp: Math.floor(1000 + Math.random() * 9000).toString(),
                     finalPrice: req.body.price || 300 // default or from request
-                } 
+                }
             },
             { new: true }
         ).populate('customerId').populate('partnerId');
 
         if (!job) {
-            return res.status(400).json({ 
-                success: false, 
-                message: "Mission no longer available. Another Bhaiya grabbed it first! 🚀" 
+            return res.status(400).json({
+                success: false,
+                message: "Mission no longer available. Another Bhaiya grabbed it first! 🚀"
             });
         }
 
@@ -218,7 +223,7 @@ router.post('/:id/propose', async (req, res) => {
         job.offers.push({ partnerId, offeredPrice, status: 'PENDING' });
         if (job.status === 'CREATED') job.status = 'OFFERED';
         await job.save();
-        
+
         const populatedJob = await Job.findById(job._id).populate('customerId').populate('partnerId');
         res.json({ success: true, job: populatedJob });
     } catch (error) {
@@ -227,7 +232,7 @@ router.post('/:id/propose', async (req, res) => {
 });
 
 // 5. Update Status Lifecycle
-router.patch('/:id/status', async (req, res) => {
+router.patch('/:id/status', authMiddleware, checkProfileCompleted, async (req, res) => {
     try {
         const { status } = req.body;
         const job = await Job.findById(req.params.id);
@@ -242,9 +247,19 @@ router.patch('/:id/status', async (req, res) => {
 
         if (status === 'COMPLETED') {
             job.endTime = new Date();
+            const profile = await PartnerProfile.findById(job.partnerId);
+            if (profile) {
+                profile.totalJobs += 1;
+                // REMOVED LEGACY PLATFORM CUT - Payments are direct now
+                // profile.earnings += (job.finalPrice || job.basePrice || 0);
+                await profile.save();
+            }
         }
 
         if (status === 'PAID') {
+            job.paymentStatus = 'PAID';
+            job.paidToPartner = true;
+            if (req.body.paymentMethod) job.paymentMethod = req.body.paymentMethod;
             await PartnerProfile.findByIdAndUpdate(job.partnerId, { workingStatus: 'AVAILABLE' });
             
             const profile = await PartnerProfile.findById(job.partnerId);

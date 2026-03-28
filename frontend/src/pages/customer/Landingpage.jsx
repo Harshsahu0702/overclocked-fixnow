@@ -181,7 +181,7 @@ const Landingpage = ({ onLoginClick }) => {
     const [activeJob, setActiveJob] = useState(null);
     const [bhaiyaLocation, setBhaiyaLocation] = useState(null);
     const [viewState, setViewState] = useState('idle'); // idle, results, tracking
-    const [liveExpertCount, setLiveExpertCount] = useState(0); 
+    const [liveExpertCount, setLiveExpertCount] = useState(0);
     const footerRef = useRef(null);
 
     // Ref to track activeJob for socket
@@ -281,7 +281,7 @@ const Landingpage = ({ onLoginClick }) => {
     useEffect(() => {
         const fetchExpertCount = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/partners/available-count');
+                const res = await axios.get('http://10.74.227.253:5000/api/partners/available-count');
                 if (res.data.success) {
                     setLiveExpertCount(res.data.count);
                 }
@@ -306,7 +306,7 @@ const Landingpage = ({ onLoginClick }) => {
     const fetchActiveJob = async () => {
         if (!user) return;
         try {
-            const res = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=customer`);
+            const res = await axios.get(`http://10.74.227.253:5000/api/jobs/active/${user._id}?role=customer`);
             if (res.data.job) {
                 setActiveJob(res.data.job);
                 setViewState('tracking');
@@ -334,7 +334,7 @@ const Landingpage = ({ onLoginClick }) => {
         if (!selectedWorker) return alert("Pehle ek Bhaiya select karo!");
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/jobs/create', {
+            const res = await axios.post('http://10.74.227.253:5000/api/jobs/create', {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
                 description: searchQuery,
@@ -356,7 +356,7 @@ const Landingpage = ({ onLoginClick }) => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);
@@ -369,7 +369,7 @@ const Landingpage = ({ onLoginClick }) => {
     const handleCompletePayment = async () => {
         setLoading(true);
         try {
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'PAID' });
+            const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, { status: 'PAID' });
             if (res.data.success) {
                 setActiveJob(null);
                 setViewState('idle');

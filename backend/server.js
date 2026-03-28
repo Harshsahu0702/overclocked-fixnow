@@ -141,6 +141,13 @@ io.on('connection', (socket) => {
 
         io.to('admin_panel').emit('admin_status_update', payload);
     });
+    
+    // Payment Confirmation Logic (UPI or Cash)
+    socket.on('payment_confirmation_request', (data) => {
+        const { jobId, partnerId, customerId, amount, method } = data;
+        console.log(`💰 Payment confirmation request for job ${jobId} via ${method} to partner ${partnerId}`);
+        io.to(`partner_${partnerId}`).emit('confirm_payment', { jobId, customerId, amount, method });
+    });
 
     socket.on('disconnect', () => {
         console.log('🔌 Client disconnected');
@@ -148,6 +155,6 @@ io.on('connection', (socket) => {
 });
 
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
+server.listen(PORT, '0.0.0.0', () => {
     console.log(`🚀 FixNow Server running on port ${PORT}`);
 });

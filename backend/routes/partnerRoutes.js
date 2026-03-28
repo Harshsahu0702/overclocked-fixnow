@@ -3,6 +3,8 @@ const router = express.Router();
 const PartnerProfile = require('../models/PartnerProfile');
 const Job = require('../models/Job');
 const jwt = require('jsonwebtoken');
+const authMiddleware = require('../middleware/authMiddleware');
+const checkProfileCompleted = require('../middleware/checkProfileCompleted');
 
 // 0. Dedicated Partner Pro Login - SEARCHES ONLY PARTNERPROFILE
 router.post('/login', async (req, res) => {
@@ -30,7 +32,7 @@ router.post('/login', async (req, res) => {
 
         // 3. Generate Token (Contains Profile ID)
         const token = jwt.sign(
-            { id: profile._id, role: 'partner' },
+            { id: profile._id.toString(), role: 'partner' },
             process.env.JWT_SECRET || 'secret_key',
             { expiresIn: '7d' }
         );
@@ -43,7 +45,12 @@ router.post('/login', async (req, res) => {
                 name: profile.name,
                 phone: profile.phone,
                 role: "partner",
-                status: profile.status
+                status: profile.status,
+                profileCompleted: profile.profileCompleted || false,
+                serviceCategory: profile.serviceCategory || "",
+                upiId: profile.upiId || "",
+                qrCodeImage: profile.qrCodeImage || "",
+                acceptsCash: profile.acceptsCash || false
             }
         });
 
@@ -53,10 +60,59 @@ router.post('/login', async (req, res) => {
     }
 });
 
-// 1. Toggle Online/Offline
-router.post('/toggle-status', async (req, res) => {
+// A. COMPLETE PROFILE - MANDATORY PAYMENT INFO
+router.post('/complete-profile', authMiddleware, async (req, res) => {
     try {
-        const { userId, isOnline } = req.body; // userId here is the Profile ID
+        const {
+            name,
+            phone,
+            serviceCategory,
+            location,
+            upiId,
+            qrCodeImage,
+            acceptsCash,
+            bankName
+        } = req.body;
+
+        const profile = await PartnerProfile.findById(req.user.id);
+        if (!profile) return res.status(404).json({ success: false, message: "Partner not found" });
+
+        // Update fields
+        if (name) profile.name = name;
+        if (phone) profile.phone = phone;
+        if (serviceCategory) profile.serviceCategory = serviceCategory;
+        if (upiId) profile.upiId = upiId;
+        if (qrCodeImage) profile.qrCodeImage = qrCodeImage;
+        if (bankName) profile.bankName = bankName;
+        profile.acceptsCash = (acceptsCash === true || acceptsCash === "true");
+
+        // Optional: Location update if provided in [lng, lat] format
+        if (location && Array.isArray(location)) {
+            profile.location = { type: 'Point', coordinates: location };
+        }
+
+        profile.profileCompleted = true;
+        profile.subscriptionActive = true; // Auto-activate for now, or based on payment
+
+        await profile.save();
+
+        res.json({
+            success: true,
+            message: "Profile completed successfully! 🚀",
+            profile
+        });
+
+    } catch (error) {
+        console.error("Complete Profile Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 1. Toggle Online/Offline
+router.post('/toggle-status', authMiddleware, checkProfileCompleted, async (req, res) => {
+    try {
+        const { isOnline } = req.body;
+        const userId = req.user.id;
         let profile = await PartnerProfile.findById(userId);
 
         if (!profile) {
@@ -84,7 +140,7 @@ router.post('/toggle-status', async (req, res) => {
 });
 
 // 2. Fetch Dashboard Stats
-router.get('/stats/:userId', async (req, res) => {
+router.get('/stats/:userId', authMiddleware, checkProfileCompleted, async (req, res) => {
     try {
         let profile = await PartnerProfile.findById(req.params.userId);
 
@@ -124,7 +180,7 @@ router.get('/stats/:userId', async (req, res) => {
 });
 
 // 3. Transactions / Ledger
-router.get('/ledger/:userId', async (req, res) => {
+router.get('/ledger/:userId', authMiddleware, checkProfileCompleted, async (req, res) => {
     try {
         const jobs = await Job.find({
             partnerId: req.params.userId,
@@ -140,11 +196,11 @@ router.get('/ledger/:userId', async (req, res) => {
 // 4. Live Expert Count for Landing Page
 router.get('/available-count', async (req, res) => {
     try {
-        const count = await PartnerProfile.countDocuments({ 
-            status: 'APPROVED', 
-            isOnline: true 
+        const count = await PartnerProfile.countDocuments({
+            status: 'APPROVED',
+            isOnline: true
         });
-        
+
         // Boosted base for demo if real DB is small, or just real count
         res.json({ success: true, count: count || 0 });
     } catch (error) {

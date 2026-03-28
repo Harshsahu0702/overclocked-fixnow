@@ -123,6 +123,141 @@ const AuthScreen = ({ handleLogin, loginData, setLoginData, showPass, setShowPas
     </div>
 );
 
+const CompleteProfileScreen = ({ user, onComplete }) => {
+    const [formData, setFormData] = useState({
+        name: user?.name || '',
+        phone: user?.phone || '',
+        serviceCategory: user?.serviceCategory || '',
+        upiId: user?.upiId || '',
+        qrCodeImage: user?.qrCodeImage || '',
+        acceptsCash: user?.acceptsCash || false,
+        bankName: user?.bankName || ''
+    });
+    const [loading, setLoading] = useState(false);
+    const [preview, setPreview] = useState(user?.qrCodeImage || null);
+
+    const handleFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setFormData(prev => ({ ...prev, qrCodeImage: reader.result }));
+                setPreview(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!formData.upiId || !formData.qrCodeImage) {
+            alert("UPI ID and QR Code are mandatory!");
+            return;
+        }
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/complete-profile', formData, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) {
+                alert("Profile Completed! 🚀");
+                onComplete();
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || "Failed to save profile");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="min-h-screen bg-[#fcfcfd] flex flex-col items-center justify-center p-8 font-sans">
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full max-w-lg bg-white p-12 rounded-[3.5rem] shadow-2xl border border-slate-100">
+                <div className="text-center mb-10">
+                    <div className="w-20 h-20 bg-yellow-400 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-xl">
+                        <Wallet size={40} className="text-black" />
+                    </div>
+                    <h1 className="text-4xl font-[1000] text-slate-900 tracking-tighter uppercase italic leading-none mb-3">Setup Payments</h1>
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic">Mandatory Partner Onboarding</p>
+                </div>
+
+                <form onSubmit={handleSubmit} className="space-y-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-1.5">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic ml-2">Full Name</label>
+                            <input type="text" value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" required />
+                        </div>
+                        <div className="space-y-1.5">
+                            <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic ml-2">Phone</label>
+                            <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full px-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold" required />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic ml-2">UPI ID (e.g. bhaiya@upi)</label>
+                        <div className="relative">
+                            <IndianRupee className="absolute left-5 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
+                            <input type="text" placeholder="yourname@bank" value={formData.upiId} onChange={e => setFormData({ ...formData, upiId: e.target.value })} className="w-full pl-14 pr-6 py-4 rounded-2xl bg-slate-50 border border-slate-100 font-bold uppercase tracking-widest" required />
+                        </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                        <label className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic ml-2">Upload Payment QR CODE</label>
+                        <div className="flex items-center gap-6 p-6 border-2 border-dashed border-slate-200 rounded-2xl hover:border-black/20 transition-all cursor-pointer relative group">
+                            <input type="file" accept="image/*" onChange={handleFileChange} className="absolute inset-0 opacity-0 cursor-pointer" />
+                            {preview ? (
+                                <img src={preview} alt="QR Preview" className="w-20 h-20 object-cover rounded-xl" />
+                            ) : (
+                                <div className="w-20 h-20 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300"><Plus size={32} /></div>
+                            )}
+                            <div className="flex-1">
+                                <p className="text-xs font-black uppercase text-slate-600 italic">Select Image File</p>
+                                <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic mt-1">GPay / PhonePe QR Scan</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-6 bg-slate-50 rounded-2xl border border-slate-100">
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-widest italic text-slate-900">Accept Cash Payments</p>
+                            <p className="text-[8px] font-black text-slate-400 uppercase tracking-widest italic mt-1">Allow customers to pay offline</p>
+                        </div>
+                        <button type="button" onClick={() => setFormData({ ...formData, acceptsCash: !formData.acceptsCash })} className={`w-14 h-8 rounded-full p-1 transition-all ${formData.acceptsCash ? 'bg-black' : 'bg-slate-200'}`}>
+                            <div className={`w-6 h-6 bg-white rounded-full transition-all ${formData.acceptsCash ? 'translate-x-6' : 'translate-x-0'}`} />
+                        </button>
+                    </div>
+
+                    <button type="submit" disabled={loading} className="w-full py-6 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50">
+                        {loading ? 'DEPLOYING PROFILE...' : 'COMPLETE ONBOARDING'}
+                    </button>
+                </form>
+            </motion.div>
+        </div>
+    );
+};
+
+const PaymentConfirmationModal = ({ request, onConfirm, onCancel }) => {
+    if (!request) return null;
+    const isCash = request.method === 'CASH';
+    return (
+        <div className="fixed inset-0 z-[1000] flex items-center justify-center p-6 backdrop-blur-md bg-black/40">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="w-full max-w-sm bg-white rounded-[3rem] p-10 border-4 border-black shadow-[15px_15px_0_0_#FACC15]">
+                <div className="mb-8 text-center">
+                    <div className="w-20 h-20 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-4xl">{isCash ? '💵' : '📱'}</div>
+                    <h3 className="text-3xl font-black uppercase italic tracking-tighter mb-2">{isCash ? 'Cash Received?' : 'UPI Received?'}</h3>
+                    <p className="text-slate-400 font-bold text-xs uppercase tracking-widest leading-relaxed text-center">Customer says they paid <span className="text-black italic">₹{request.amount}</span> via <span className="text-blue-600 italic">{request.method}</span>. Did you receive it?</p>
+                </div>
+                <div className="flex flex-col gap-3">
+                    <button onClick={onConfirm} className="w-full py-5 bg-black text-yellow-400 rounded-2xl font-black uppercase italic text-lg shadow-[5px_5px_0_0_#000] active:translate-y-1 active:shadow-none transition-all">Yes, Confirmed!</button>
+                    <button onClick={onCancel} className="w-full py-4 bg-slate-100 text-slate-400 rounded-2xl font-black uppercase italic text-xs tracking-widest hover:text-red-500 transition-colors">Not Yet</button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
+
 
 const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnline, newRequests, setNewRequests, handleAcceptMission, handleRejectMission }) => {
     const [selectedJob, setSelectedJob] = React.useState(null);
@@ -353,7 +488,7 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
 
 
 
-const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput, updateJobStatus }) => {
+const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput, updateJobStatus, isUpdating }) => {
     const formatTime = (seconds) => {
         const m = Math.floor(seconds / 60);
         const s = seconds % 60;
@@ -412,7 +547,7 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                     <div className="flex justify-between items-center relative h-12 mb-4">
                         <div className="absolute left-8 right-8 top-1/2 -translate-y-1/2 h-[3px] bg-slate-100 z-0 rounded-full" />
                         <div className="absolute left-8 top-1/2 -translate-y-1/2 h-[3px] bg-emerald-500 z-10 transition-all duration-1000 shadow-[0_0_15px_rgba(16,185,129,0.8)]" style={{ width: `calc(${(activeIdx / (steps.length - 1)) * 100}% - 4rem)` }} />
- 
+
                         {steps.map((st, i) => (
                             <div key={st} className="relative z-20 flex flex-col items-center gap-3">
                                 <div className={`w-12 h-12 rounded-[1.2rem] border-2 flex items-center justify-center transition-all duration-700 shadow-xl ${activeIdx >= i ? 'bg-black border-black text-white scale-110 rotate-[360deg]' : 'bg-slate-50 border-white text-slate-200'}`}>
@@ -437,13 +572,13 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                     <div className="text-center">
                         <span className="text-[9px] font-black text-slate-500 uppercase tracking-[0.4em] italic mb-2 block">Mission Authority</span>
                     </div>
- 
+
                     {currentStep === 'ACCEPTED' && (
-                        <button onClick={() => updateJobStatus('ON_THE_WAY')} className="w-full py-8 bg-emerald-500 text-white rounded-[2rem] font-black text-xl uppercase italic tracking-tighter shadow-3xl hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all border-b-8 border-emerald-700">
-                            ENGAGE MISSION
+                        <button disabled={isUpdating} onClick={() => updateJobStatus('ON_THE_WAY')} className="w-full py-8 bg-emerald-500 text-white rounded-[2rem] font-black text-xl uppercase italic tracking-tighter shadow-3xl hover:bg-emerald-400 hover:scale-105 active:scale-95 transition-all border-b-8 border-emerald-700 disabled:opacity-50">
+                            {isUpdating ? 'SYNCHRONIZING...' : 'ENGAGE MISSION'}
                         </button>
                     )}
- 
+
                     {currentStep === 'ON_THE_WAY' && (
                         <div className="flex flex-col gap-6">
                             <div className="flex gap-4 h-20">
@@ -457,18 +592,18 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                                 />
                                 <button
                                     onClick={() => updateJobStatus('IN_PROGRESS')}
-                                    disabled={otpInput.length < 4}
+                                    disabled={otpInput.length < 4 || isUpdating}
                                     className="flex-1 bg-emerald-500 text-white rounded-[1.5rem] font-black text-lg uppercase italic tracking-tighter shadow-3xl disabled:opacity-30 hover:bg-emerald-600 active:scale-95 transition-all flex items-center justify-center gap-3 whitespace-nowrap px-6 border-b-8 border-emerald-700"
                                 >
-                                    <Play fill="white" size={18} /> START WORK
+                                    {isUpdating ? <Loader2 className="animate-spin" size={20} /> : <Play fill="white" size={18} />} START WORK
                                 </button>
                             </div>
                         </div>
                     )}
- 
+
                     {currentStep === 'IN_PROGRESS' && (
-                        <button onClick={() => updateJobStatus('COMPLETED')} className="w-full py-8 bg-white text-black rounded-[2rem] font-black text-2xl uppercase italic tracking-tighter shadow-3xl hover:bg-emerald-400 active:scale-95 transition-all flex items-center justify-center gap-4 border-b-8 border-slate-200">
-                            FINISH <Zap size={24} className="text-emerald-500" />
+                        <button disabled={isUpdating} onClick={() => updateJobStatus('COMPLETED')} className="w-full py-8 bg-white text-black rounded-[2rem] font-black text-2xl uppercase italic tracking-tighter shadow-3xl hover:bg-emerald-400 active:scale-95 transition-all flex items-center justify-center gap-4 border-b-8 border-slate-200 disabled:opacity-50">
+                            {isUpdating ? 'POSTING MISSION DATA...' : <>FINISH <Zap size={24} className="text-emerald-500" /></>}
                         </button>
                     )}
 
@@ -478,7 +613,7 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                             onClick={async () => {
                                 if (!confirm('ABORT MISSION?')) return;
                                 try {
-                                    const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+                                    const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
                                     if (res.data.success) {
                                         socket.emit('job_status_update', {
                                             jobId: activeJob._id,
@@ -515,7 +650,7 @@ const HistoryView = ({ user, stats }) => {
     useEffect(() => {
         const fetchLedger = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/partners/ledger/${user._id}`);
+                const res = await axios.get(`http://10.74.227.253:5000/api/partners/ledger/${user._id}`);
                 if (res.data.success) setLedger(res.data.jobs);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
@@ -593,7 +728,7 @@ const ProfileView = ({ user, stats, logout }) => (
         {/* Profile Identity Card */}
         <div className="bg-white p-12 rounded-[5rem] border border-slate-100 relative group overflow-hidden shadow-2xl">
             <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-yellow-100/20 via-transparent to-transparent opacity-50" />
-            
+
             <div className="relative z-10 flex flex-col lg:flex-row items-center gap-16 text-left">
                 <div className="relative">
                     <div className="w-56 h-56 bg-white rounded-[4rem] p-3 border-2 border-slate-100 relative overflow-hidden flex items-center justify-center shadow-3xl group-hover:border-black/10 transition-all duration-700">
@@ -655,13 +790,13 @@ const ProfileView = ({ user, stats, logout }) => (
                     key={i}
                     onClick={item.action}
                     className={`p-10 rounded-[3.5rem] border-2 flex flex-col items-start gap-6 group transition-all duration-500 text-left ${item.danger
-                            ? 'bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200'
-                            : 'bg-white border-slate-50 hover:border-black/10 hover:shadow-2xl shadow-sm'
+                        ? 'bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200'
+                        : 'bg-white border-slate-50 hover:border-black/10 hover:shadow-2xl shadow-sm'
                         }`}
                 >
                     <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 shadow-xl ${item.danger
-                            ? 'bg-red-500 text-white'
-                            : 'bg-black text-white group-hover:bg-yellow-400 group-hover:text-black group-hover:rotate-6'
+                        ? 'bg-red-500 text-white'
+                        : 'bg-black text-white group-hover:bg-yellow-400 group-hover:text-black group-hover:rotate-6'
                         }`}>
                         {React.cloneElement(item.icon, { strokeWidth: 2.5 })}
                     </div>
@@ -670,9 +805,9 @@ const ProfileView = ({ user, stats, logout }) => (
                         <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic">{item.detail}</span>
                     </div>
                     {!item.danger && (
-                         <div className="mt-4 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
+                        <div className="mt-4 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
                             <div className="w-0 group-hover:w-full h-full bg-slate-900 transition-all duration-1000" />
-                         </div>
+                        </div>
                     )}
                 </button>
             ))}
@@ -689,10 +824,10 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
 
         {/* Success Icon */}
-        <motion.div 
-            initial={{ scale: 0, rotate: -180 }} 
-            animate={{ scale: 1, rotate: 0 }} 
-            transition={{ type: 'spring', damping: 15, stiffness: 200 }} 
+        <motion.div
+            initial={{ scale: 0, rotate: -180 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ type: 'spring', damping: 15, stiffness: 200 }}
             className="w-28 h-28 bg-emerald-500 rounded-[2.5rem] flex items-center justify-center text-white mb-8 shadow-[0_25px_50px_-12px_rgba(16,185,129,0.5)] relative z-10 border-4 border-white"
         >
             <Check size={50} strokeWidth={8} />
@@ -705,9 +840,9 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
         </motion.div>
 
         {/* Revenue Card */}
-        <motion.div 
-            initial={{ opacity: 0, y: 30 }} 
-            animate={{ opacity: 1, y: 0 }} 
+        <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="w-full max-w-sm lg:max-w-md bg-black text-white p-8 lg:p-12 rounded-[3.5rem] border-b-[12px] border-yellow-400 shadow-3xl relative mb-12"
         >
@@ -715,7 +850,7 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
             <div className="absolute top-0 right-0 p-6 opacity-[0.07] rotate-12 pointer-events-none">
                 <IndianRupee size={200} />
             </div>
-            
+
             <div className="relative z-10 py-2">
                 <p className="text-[9px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-6 italic">Personnel Earnings</p>
                 <div className="flex items-center justify-center gap-3 mb-10">
@@ -735,11 +870,11 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
         </motion.div>
 
         {/* Actions */}
-        <motion.button 
-            initial={{ opacity: 0 }} 
-            animate={{ opacity: 1 }} 
+        <motion.button
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
-            onClick={() => setSummaryJob(null)} 
+            onClick={() => setSummaryJob(null)}
             className="w-full max-w-xs lg:max-w-sm py-7 bg-slate-900 hover:bg-black text-white rounded-[2rem] font-[1000] text-2xl uppercase italic tracking-tighter shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 group"
         >
             BACK TO RADAR
@@ -774,9 +909,12 @@ const PartnerDashboard = () => {
     const [currentPos, setCurrentPos] = useState(null);
     const [isOnline, setIsOnline] = useState(false);
     const [workingStatus, setWorkingStatus] = useState('OFFLINE');
+    const [paymentRequest, setPaymentRequest] = useState(null);
+    const [isUpdating, setIsUpdating] = useState(false);
 
     const [newRequests, setNewRequests] = useState([]);
     const [activeJob, setActiveJob] = useState(null);
+    const [isProfileIncomplete, setIsProfileIncomplete] = useState(false);
     const [jobTimer, setJobTimer] = useState(0);
     const [otpInput, setOtpInput] = useState('');
     const [summaryJob, setSummaryJob] = useState(null);
@@ -784,25 +922,34 @@ const PartnerDashboard = () => {
     const gpsInterval = useRef(null);
     const mapInitialCentered = useRef(false);
     const activeJobRef = useRef(activeJob);
+    const isUpdatingRef = useRef(isUpdating);
 
     useEffect(() => {
         activeJobRef.current = activeJob;
     }, [activeJob]);
+
+    useEffect(() => {
+        isUpdatingRef.current = isUpdating;
+    }, [isUpdating]);
 
     // 2. DATA LAYER (AXIOS)
     const fetchDashboard = useCallback(async () => {
         if (!user?._id) return;
         try {
             // STEP 1: Check Mission Health FIRST (Triggers self-healing if needed)
-            const jobRes = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=partner`);
-            
+            const jobRes = await axios.get(`http://10.74.227.253:5000/api/jobs/active/${user._id}?role=partner`);
+
             // STEP 2: Fetch Stats (Gets the updated status after potential healing)
-            const res = await axios.get(`http://localhost:5000/api/partners/stats/${user._id}`);
-            
+            const token = localStorage.getItem('token');
+            const res = await axios.get(`http://10.74.227.253:5000/api/partners/stats/${user._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+
             if (res.data.success) {
                 setStats(res.data);
                 setIsOnline(res.data.isOnline);
                 setWorkingStatus(res.data.workingStatus);
+                setIsProfileIncomplete(false);
             }
 
             if (jobRes.data && jobRes.data.job) {
@@ -822,6 +969,14 @@ const PartnerDashboard = () => {
             }
         } catch (err) {
             console.error("Fetch Error:", err);
+            if (err.response?.status === 403 && (err.response?.data?.profileCompleted === false)) {
+                setIsProfileIncomplete(true);
+            }
+            if (err.response?.status === 401) {
+                // Session expired or invalid
+                localStorage.removeItem('token');
+                setUser(null);
+            }
         } finally {
             setInitLoading(false);
         }
@@ -869,7 +1024,13 @@ const PartnerDashboard = () => {
             console.log("Partner Status Update:", payload);
 
             if (!payload || !payload.job) return;
-            
+
+            // IF we are currently in an API update, ignore socket signals to prevent state fighting
+            if (activeJobRef.current?._id && isUpdatingRef.current) {
+                console.log("🛑 Ignoring socket update while API synchronizing...");
+                return;
+            }
+
             // SECURITY/LOGIC CHECK: Ensure this update is for the job we are currently handling
             // Since a partner might have multiple offers or old room memberships, we MUST filter.
             const incomingJobId = (payload.jobId || payload.job?._id)?.toString();
@@ -905,6 +1066,11 @@ const PartnerDashboard = () => {
             setNewRequests(prev => prev.filter(r => r._id !== jobId));
         });
 
+        socket.on('confirm_payment', (data) => {
+            console.log("💰 Received payment confirmation request:", data);
+            setPaymentRequest(data);
+        });
+
         fetchDashboard();
 
         return () => {
@@ -913,6 +1079,7 @@ const PartnerDashboard = () => {
             socket.off('offer_accepted');
             socket.off('status_changed');
             socket.off('job_taken');
+            socket.off('confirm_payment');
             if (gpsInterval.current) clearInterval(gpsInterval.current);
         };
     }, [user, fetchDashboard]);
@@ -979,10 +1146,13 @@ const PartnerDashboard = () => {
         setError('');
         try {
             // Using a dedicated partner login route for PRO dashboard
-            const res = await axios.post('http://localhost:5000/api/partners/login', loginData);
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/login', loginData);
             if (res.data.success) {
-                localStorage.setItem('user', JSON.stringify(res.data.user));
-                setUser(res.data.user);
+                const { token, user } = res.data;
+                localStorage.setItem('token', token);
+                localStorage.setItem('user', JSON.stringify(user));
+                setUser(user);
+                // fetchDashboard will be triggered by useEffect
             }
         } catch (err) {
             setError(err.response?.data?.message || "Authentication Failed");
@@ -1000,9 +1170,12 @@ const PartnerDashboard = () => {
         setWorkingStatus(newState ? 'AVAILABLE' : 'OFFLINE');
 
         try {
-            const res = await axios.post('http://localhost:5000/api/partners/toggle-status', {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/toggle-status', {
                 userId: user._id,
                 isOnline: newState
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
                 setIsOnline(res.data.isOnline);
@@ -1016,6 +1189,7 @@ const PartnerDashboard = () => {
             setIsOnline(prevOnline);
             setWorkingStatus(prevStatus);
             console.error(err);
+            alert(err.response?.data?.message || "Failed to update status. Are you authenticated?");
         }
     };
 
@@ -1039,8 +1213,11 @@ const PartnerDashboard = () => {
             setNewRequests(prev => prev.filter(r => r._id !== jobId));
             setActiveJob({ ...jobToAccept, status: 'ACCEPTED' });
 
-            const res = await axios.post(`http://localhost:5000/api/jobs/${jobId}/accept`, {
+            const token = localStorage.getItem('token');
+            const res = await axios.post(`http://10.74.227.253:5000/api/jobs/${jobId}/accept`, {
                 partnerId: user._id
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success && res.data.job) {
                 setActiveJob(res.data.job);
@@ -1059,14 +1236,19 @@ const PartnerDashboard = () => {
     };
 
     const updateJobStatus = async (status) => {
+        if (isUpdating) return;
+        setIsUpdating(true);
         const prevJob = activeJob;
         // Optimistic Update
         setActiveJob(prev => ({ ...prev, status }));
 
         try {
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, {
+            const token = localStorage.getItem('token');
+            const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, {
                 status,
                 otp: status === 'IN_PROGRESS' ? otpInput : undefined
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
                 setActiveJob(res.data.job);
@@ -1081,6 +1263,8 @@ const PartnerDashboard = () => {
         } catch (err) {
             setActiveJob(prevJob);
             alert(err.response?.data?.message || "Status update failed");
+        } finally {
+            setIsUpdating(false);
         }
     };
 
@@ -1089,9 +1273,38 @@ const PartnerDashboard = () => {
         window.location.reload();
     };
 
+    const handleConfirmPayment = async () => {
+        if (!paymentRequest) return;
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${paymentRequest.jobId}/status`, {
+                status: 'PAID',
+                paymentMethod: paymentRequest.method || 'UPI'
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) {
+                setSummaryJob(res.data.job);
+                setActiveJob(null);
+                setPaymentRequest(null);
+                fetchDashboard();
+            }
+        } catch (err) {
+            alert("Error confirming payment: " + (err.response?.data?.message || err.message));
+        }
+    };
+
+    const handleRejectPayment = () => {
+        setPaymentRequest(null);
+    };
+
     // 6. MAIN RENDER
     if (!user || user.role !== 'partner') {
         return <AuthScreen handleLogin={handleLogin} loginData={loginData} setLoginData={setLoginData} showPass={showPass} setShowPass={setShowPass} authLoading={authLoading} error={error} />;
+    }
+
+    if (isProfileIncomplete) {
+        return <CompleteProfileScreen user={user} onComplete={() => { setIsProfileIncomplete(false); fetchDashboard(); }} />;
     }
 
     if (stats && stats.status !== 'APPROVED') {
@@ -1279,10 +1492,16 @@ const PartnerDashboard = () => {
                 </div>
 
                 <AnimatePresence>
-                    {activeJob && activeJob.status !== 'OFFERED' && <MissionControl key="mission" activeJob={activeJob} currentPos={currentPos} jobTimer={jobTimer} otpInput={otpInput} setOtpInput={setOtpInput} updateJobStatus={updateJobStatus} />}
+                    {activeJob && activeJob.status !== 'OFFERED' && <MissionControl key="mission" activeJob={activeJob} currentPos={currentPos} jobTimer={jobTimer} otpInput={otpInput} setOtpInput={setOtpInput} updateJobStatus={updateJobStatus} isUpdating={isUpdating} />}
                     {summaryJob && <JobSummaryModal key="summary" summaryJob={summaryJob} setSummaryJob={setSummaryJob} />}
                 </AnimatePresence>
             </main>
+
+            <PaymentConfirmationModal
+                request={paymentRequest}
+                onConfirm={handleConfirmPayment}
+                onCancel={handleRejectPayment}
+            />
 
             <style>{`
                 @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
