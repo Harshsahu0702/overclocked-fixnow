@@ -194,6 +194,20 @@ router.post('/:id/accept', async (req, res) => {
     }
 });
 
+// Reject/Ignore Job
+router.post('/:id/reject', async (req, res) => {
+    try {
+        const { partnerId } = req.body;
+        await Job.findByIdAndUpdate(req.params.id, {
+            $pull: { partnerIds: partnerId }
+        });
+        res.json({ success: true });
+    } catch (error) {
+        console.error("Reject Job Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
 // 4. Propose Price
 router.post('/:id/propose', async (req, res) => {
     try {

@@ -124,7 +124,7 @@ const AuthScreen = ({ handleLogin, loginData, setLoginData, showPass, setShowPas
 );
 
 
-const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnline, newRequests, setNewRequests, handleAcceptMission }) => {
+const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnline, newRequests, setNewRequests, handleAcceptMission, handleRejectMission }) => {
     const [selectedJob, setSelectedJob] = React.useState(null);
 
     return (
@@ -271,7 +271,7 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
                                         {workingStatus === 'BUSY' ? 'ACTIVE' : <>ENGAGE <ArrowRight size={14} /></>}
                                     </button>
                                     <button
-                                        onClick={() => setNewRequests(prev => prev.filter(r => r._id !== req._id))}
+                                        onClick={() => handleRejectMission(req._id)}
                                         className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 font-black transition-all hover:bg-red-50 rounded-2xl italic flex-shrink-0 border-2 border-transparent hover:border-red-100"
                                     >
                                         <X size={16}/>
@@ -326,12 +326,23 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
                             </div>
                         </div>
 
-                        <button
-                            onClick={() => { setSelectedJob(null); handleAcceptMission(selectedJob._id); }}
-                            className="w-full py-5 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
-                        >
-                            ACCEPT MISSION
-                        </button>
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => { 
+                                    handleRejectMission(selectedJob._id);
+                                    setSelectedJob(null); 
+                                }}
+                                className="flex-1 py-5 bg-red-50 text-red-500 rounded-[2rem] border-2 border-red-100 font-[1000] text-xl uppercase italic tracking-tighter shadow-xl hover:bg-red-100 active:scale-[0.98] transition-all"
+                            >
+                                CANCEL
+                            </button>
+                            <button
+                                onClick={() => { setSelectedJob(null); handleAcceptMission(selectedJob._id); }}
+                                className="flex-[2] py-5 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                            >
+                                ACCEPT MISSION
+                            </button>
+                        </div>
                     </motion.div>
                 </motion.div>
             )}
@@ -1032,6 +1043,17 @@ const PartnerDashboard = () => {
         }
     };
 
+    const handleRejectMission = async (jobId) => {
+        setNewRequests(prev => prev.filter(r => r._id !== jobId));
+        try {
+            await axios.post(`http://localhost:5000/api/jobs/${jobId}/reject`, {
+                partnerId: user._id
+            });
+        } catch (err) {
+            console.error("Reject API Error:", err);
+        }
+    };
+
     const handleAcceptMission = async (jobId) => {
         try {
             const jobToAccept = newRequests.find(r => r._id === jobId);
@@ -1261,6 +1283,7 @@ const PartnerDashboard = () => {
                                 newRequests={newRequests}
                                 setNewRequests={setNewRequests}
                                 handleAcceptMission={handleAcceptMission}
+                                handleRejectMission={handleRejectMission}
                             />
                         )}
 
