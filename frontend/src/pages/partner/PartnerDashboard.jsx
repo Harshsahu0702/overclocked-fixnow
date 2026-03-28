@@ -10,7 +10,7 @@ import {
 import { socket } from '../../socket';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
-import { MapContainer, TileLayer, Marker, Circle, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Circle, Polyline, useMap, Tooltip } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -40,6 +40,22 @@ const BhaiyaIcon = L.divIcon({
     html: `<div class="w-6 h-6 bg-yellow-400 rounded-full border-2 border-black shadow-xl flex items-center justify-center font-black text-[8px] italic">B</div>`,
     iconSize: [24, 24],
     iconAnchor: [12, 12]
+});
+
+// Custom Marker for Available Jobs (Classic Red Pin)
+const JobIndicatorIcon = L.divIcon({
+    className: 'custom-div-icon',
+    html: `
+        <div class="relative flex items-center justify-center">
+            <div class="absolute w-10 h-10 bg-red-500/20 rounded-full animate-ping"></div>
+            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="#ef4444" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                <circle cx="12" cy="10" r="3" fill="white"></circle>
+            </svg>
+        </div>
+    `,
+    iconSize: [32, 42],
+    iconAnchor: [16, 32]
 });
 
 
@@ -263,226 +279,254 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
     const [selectedJob, setSelectedJob] = React.useState(null);
 
     return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 lg:p-6 bg-[#fafaf0] pb-40">
-        {/* Left Column: Tactical Radar & Controls */}
-        <div className="lg:col-span-8 flex flex-col gap-5">
-            <div className="h-[300px] lg:h-[460px] relative rounded-[3rem] bg-white border border-slate-100 shadow-xl overflow-hidden group">
-                {/* HUD Background Pattern */}
-                <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px]" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 lg:p-6 bg-[#fafaf0] pb-40">
+            {/* Left Column: Tactical Radar & Controls */}
+            <div className="lg:col-span-8 flex flex-col gap-5">
+                <div className="h-[300px] lg:h-[460px] relative rounded-[3rem] bg-white border border-slate-100 shadow-xl overflow-hidden group">
+                    {/* HUD Background Pattern */}
+                    <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] [background-size:24px_24px]" />
 
-                <MapContainer center={[23.68, 86.95]} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false} className="grayscale">
-                    <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
-                    {currentPos && (
-                        <>
-                            <Marker position={[currentPos.lat, currentPos.lng]} icon={BhaiyaIcon} />
-                            <Circle center={[currentPos.lat, currentPos.lng]} radius={1000} pathOptions={{ color: '#000', fillColor: '#000', fillOpacity: 0.02, weight: 1, dashArray: '5, 10' }} />
-                        </>
-                    )}
-                </MapContainer>
+                    <MapContainer center={[23.68, 86.95]} zoom={13} style={{ height: '100%', width: '100%' }} zoomControl={false} className="grayscale">
+                        <TileLayer url="https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png" />
+                        {currentPos && (
+                            <>
+                                <Marker position={[currentPos.lat, currentPos.lng]} icon={BhaiyaIcon}>
+                                    <Tooltip direction="top" offset={[0, -10]} opacity={1} permanent={false}>
+                                        <div className="bg-black text-white px-2 py-1 rounded text-[10px] font-black italic uppercase">You</div>
+                                    </Tooltip>
+                                </Marker>
+                                <Circle center={[currentPos.lat, currentPos.lng]} radius={1000} pathOptions={{ color: '#000', fillColor: '#000', fillOpacity: 0.02, weight: 1, dashArray: '5, 10' }} />
+                                <MapHelper center={[currentPos.lat, currentPos.lng]} zoom={13} />
+                            </>
+                        )}
 
-                {/* Tactical Overlays */}
-                <div className="absolute top-6 left-6 z-10 space-y-4">
-                    <div className="backdrop-blur-xl bg-white/80 px-6 py-3 rounded-2xl border border-white shadow-xl flex items-center gap-4 transition-all hover:bg-white">
-                        <div className="relative">
-                            <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-red-500 shadow-[0_0_15px_#ef4444]'}`} />
-                            {isOnline && <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75" />}
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 leading-none mb-1">Status</span>
-                            <span className="text-sm font-black uppercase tracking-widest text-black italic">{workingStatus}</span>
-                        </div>
-                    </div>
-                </div>
+                        {/* Show all available job requests on map */}
+                        {newRequests.map((req) => (
+                            req.location?.coordinates && (
+                                <Marker
+                                    key={req._id}
+                                    position={[req.location.coordinates[1], req.location.coordinates[0]]}
+                                    icon={JobIndicatorIcon}
+                                >
+                                    <Tooltip direction="top" offset={[0, -15]} opacity={1}>
+                                        <div className="bg-black/95 backdrop-blur-md p-3 rounded-2xl border-2 border-red-500 shadow-[0_0_20px_rgba(239,68,68,0.3)] min-w-[140px] relative">
+                                            <div className="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                            <p className="text-[9px] font-black text-red-500 uppercase tracking-[0.2em] leading-none mb-2 italic">TACTICAL SIGNAL</p>
+                                            <p className="text-xs font-[1000] text-white uppercase italic truncate mb-2">{req.service || 'Service'}</p>
+                                            <div className="flex items-center justify-between border-t border-white/10 pt-2">
+                                                <span className="text-[8px] font-black text-slate-500 uppercase">Est. Pay</span>
+                                                <span className="text-xs font-black text-emerald-400 italic">₹{req.basePrice}</span>
+                                            </div>
+                                        </div>
+                                    </Tooltip>
+                                </Marker>
+                            )
+                        ))}
+                    </MapContainer>
 
-                <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-3">
-                    <button className="w-12 h-12 backdrop-blur-xl bg-white/80 hover:bg-white text-slate-900 rounded-2xl border border-slate-100 shadow-xl flex items-center justify-center transition-all active:scale-90">
-                        <Navigation size={20} />
-                    </button>
-                    <button className="w-12 h-12 backdrop-blur-xl bg-white/80 hover:bg-white text-slate-900 rounded-2xl border border-slate-100 shadow-xl flex items-center justify-center transition-all active:scale-90">
-                        <MapIcon size={20} />
-                    </button>
-                </div>
-
-                {!isOnline && (
-                    <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-12 text-center">
-                        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="backdrop-blur-3xl bg-white/95 p-12 rounded-[4rem] border border-white shadow-2xl max-w-sm relative overflow-hidden">
-                            <div className="absolute inset-0 bg-slate-50 opacity-50" />
-                            <div className="relative z-10">
-                                <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-50">
-                                    <Power size={40} className="text-slate-300" />
-                                </div>
-                                <h3 className="text-2xl font-[1000] text-slate-900 uppercase italic tracking-tighter leading-none mb-4">Radar Offline</h3>
-                                <button onClick={() => toggleOnline(true)} className="w-full py-5 bg-black text-white rounded-3xl font-[1000] text-lg uppercase italic shadow-2xl hover:scale-105 transition-all">Engage Frequency</button>
+                    {/* Tactical Overlays */}
+                    <div className="absolute top-6 left-6 z-10 space-y-4">
+                        <div className="backdrop-blur-xl bg-white/80 px-6 py-3 rounded-2xl border border-white shadow-xl flex items-center gap-4 transition-all hover:bg-white">
+                            <div className="relative">
+                                <div className={`w-3 h-3 rounded-full ${isOnline ? 'bg-emerald-500 shadow-[0_0_15px_#10b981]' : 'bg-red-500 shadow-[0_0_15px_#ef4444]'}`} />
+                                {isOnline && <div className="absolute inset-0 bg-emerald-500 rounded-full animate-ping opacity-75" />}
                             </div>
-                        </motion.div>
+                            <div className="flex flex-col">
+                                <span className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-500 leading-none mb-1">Status</span>
+                                <span className="text-sm font-black uppercase tracking-widest text-black italic">{workingStatus}</span>
+                            </div>
+                        </div>
                     </div>
-                )}
-            </div>
 
-            {/* Online Toggle (Positioned below Map as requested) */}
-            <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-lg flex items-center justify-between">
-                <div className="flex items-center gap-6">
-                    <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isOnline ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-300'} border border-slate-100`}>
-                        <Zap size={28} />
+                    <div className="absolute bottom-6 right-6 z-10 flex flex-col gap-3">
+                        <button className="w-12 h-12 backdrop-blur-xl bg-white/80 hover:bg-white text-slate-900 rounded-2xl border border-slate-100 shadow-xl flex items-center justify-center transition-all active:scale-90">
+                            <Navigation size={20} />
+                        </button>
+                        <button className="w-12 h-12 backdrop-blur-xl bg-white/80 hover:bg-white text-slate-900 rounded-2xl border border-slate-100 shadow-xl flex items-center justify-center transition-all active:scale-90">
+                            <MapIcon size={20} />
+                        </button>
                     </div>
-                    <div>
-                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 italic">System Frequency</h4>
-                        <p className="text-xl font-black italic tracking-tighter text-slate-900">{isOnline ? 'SCANNING...' : 'STANDBY'}</p>
-                    </div>
-                </div>
-                <button
-                    onClick={() => toggleOnline(!isOnline)}
-                    className={`relative w-48 h-14 rounded-full p-2 flex items-center transition-all duration-700 ${isOnline ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'bg-slate-100'}`}
-                >
-                    <motion.div animate={{ x: isOnline ? 128 : 0 }} className="w-10 h-10 bg-white rounded-full shadow-2xl flex items-center justify-center relative z-10">
-                        <Power size={20} className={isOnline ? 'text-emerald-500' : 'text-slate-400'} />
-                    </motion.div>
-                    <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.3em] ${isOnline ? 'text-white pl-4' : 'text-slate-400 pl-8'}`}>
-                        {isOnline ? 'GO OFFLINE' : 'GO ONLINE'}
-                    </span>
-                </button>
-            </div>
-        </div>
 
-        {/* Right Column: Mission Signal Stack */}
-        <div className="lg:col-span-4 flex flex-col gap-5 h-full max-h-[85vh]">
-            <div className="flex items-center justify-between px-2">
-                <div className="flex flex-col">
-                    <h3 className="text-[11px] font-[1000] text-slate-600 uppercase tracking-[0.5em] italic">Mission Stack</h3>
-                    <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest italic mt-1">Operational Signals</p>
-                </div>
-                <span className="bg-black text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg">{newRequests.length} SIGNALS</span>
-            </div>
-
-            <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-4 pb-10">
-                <AnimatePresence mode="popLayout">
-                    {newRequests.length > 0 ? (
-                        newRequests.map((req) => (
-                            <motion.div
-                                key={req._id}
-                                layout
-                                initial={{ x: 50, opacity: 0 }}
-                                animate={{ x: 0, opacity: 1 }}
-                                exit={{ x: -100, opacity: 0 }}
-                                className="bg-white p-7 rounded-[2.5rem] border-2 border-slate-100 shadow-xl relative overflow-hidden group hover:border-blue-500/20 transition-all"
-                            >
-                                <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700"><Zap size={100} /></div>
-
-                                <div className="flex items-center gap-5 mb-5 border-b border-yellow-100 pb-5">
-                                    <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg border-b-4 border-yellow-600">
-                                        <Zap size={24} className="text-yellow-400 fill-yellow-400" />
+                    {!isOnline && (
+                        <div className="absolute inset-0 bg-white/40 backdrop-blur-sm z-20 flex flex-col items-center justify-center p-12 text-center">
+                            <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="backdrop-blur-3xl bg-white/95 p-12 rounded-[4rem] border border-white shadow-2xl max-w-sm relative overflow-hidden">
+                                <div className="absolute inset-0 bg-slate-50 opacity-50" />
+                                <div className="relative z-10">
+                                    <div className="w-20 h-20 bg-slate-100 rounded-3xl flex items-center justify-center mx-auto mb-8 border border-slate-50">
+                                        <Power size={40} className="text-slate-300" />
                                     </div>
-                                    <div className="flex-1 overflow-hidden">
-                                        <span className="text-[9px] font-black text-yellow-600 uppercase tracking-[0.4em] block mb-1 italic">MISSION DETECTED</span>
-                                        <h2 className="text-2xl font-[1000] uppercase italic tracking-tighter text-black truncate leading-none">
-                                            {req.service || 'URGENT WORK'}
-                                        </h2>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-4 mb-6">
-                                    <div className="flex flex-col">
-                                        <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1 italic">Client</span>
-                                        <span className="text-md font-black italic tracking-tighter text-black uppercase truncate">{req.customerId?.name || 'Customer'}</span>
-                                    </div>
-                                    <div className="flex items-start gap-4 p-3 bg-yellow-50/50 rounded-2xl border border-yellow-100">
-                                        <MapPin size={14} className="text-yellow-600 mt-1" />
-                                        <p className="text-[10px] font-black text-slate-700 uppercase italic leading-tight line-clamp-2">{req.location?.address || 'Location Hidden'}</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex gap-2">
-                                    <button
-                                        onClick={() => setSelectedJob(req)}
-                                        className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-[10px] uppercase italic tracking-widest hover:bg-slate-50 transition-all text-slate-900"
-                                    >
-                                        DETAILS
-                                    </button>
-                                    <button
-                                        onClick={() => handleAcceptMission(req._id)}
-                                        disabled={workingStatus === 'BUSY'}
-                                        className={`flex-[1.5] py-3 rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-xl transition-all flex items-center justify-center gap-2 ${workingStatus === 'BUSY' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-black text-white hover:scale-105 active:scale-95'}`}
-                                    >
-                                        {workingStatus === 'BUSY' ? 'ACTIVE' : <>ENGAGE <ArrowRight size={14} /></>}
-                                    </button>
-                                    <button
-                                        onClick={() => handleRejectMission(req._id)}
-                                        className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 font-black transition-all hover:bg-red-50 rounded-2xl italic flex-shrink-0 border-2 border-transparent hover:border-red-100"
-                                    >
-                                        <X size={16}/>
-                                    </button>
+                                    <h3 className="text-2xl font-[1000] text-slate-900 uppercase italic tracking-tighter leading-none mb-4">Radar Offline</h3>
+                                    <button onClick={() => toggleOnline(true)} className="w-full py-5 bg-black text-white rounded-3xl font-[1000] text-lg uppercase italic shadow-2xl hover:scale-105 transition-all">Engage Frequency</button>
                                 </div>
                             </motion.div>
-                        ))
-                    ) : (
-                        <div className="h-64 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem] opacity-50">
-                            <Loader2 className="animate-spin text-slate-300 mb-4" size={32} />
-                            <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.6em] italic text-center">Scanning Tactical Radar...</p>
                         </div>
                     )}
-                </AnimatePresence>
+                </div>
+
+                {/* Online Toggle (Positioned below Map as requested) */}
+                <div className="bg-white p-8 rounded-[3rem] border border-slate-100 shadow-lg flex items-center justify-between">
+                    <div className="flex items-center gap-6">
+                        <div className={`w-14 h-14 rounded-2xl flex items-center justify-center ${isOnline ? 'bg-emerald-50 text-emerald-500' : 'bg-slate-50 text-slate-300'} border border-slate-100`}>
+                            <Zap size={28} />
+                        </div>
+                        <div>
+                            <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.3em] mb-1 italic">System Frequency</h4>
+                            <p className="text-xl font-black italic tracking-tighter text-slate-900">{isOnline ? 'SCANNING...' : 'STANDBY'}</p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={() => toggleOnline(!isOnline)}
+                        className={`relative w-48 h-14 rounded-full p-2 flex items-center transition-all duration-700 ${isOnline ? 'bg-emerald-500 shadow-[0_0_30px_rgba(16,185,129,0.2)]' : 'bg-slate-100'}`}
+                    >
+                        <motion.div animate={{ x: isOnline ? 128 : 0 }} className="w-10 h-10 bg-white rounded-full shadow-2xl flex items-center justify-center relative z-10">
+                            <Power size={20} className={isOnline ? 'text-emerald-500' : 'text-slate-400'} />
+                        </motion.div>
+                        <span className={`absolute inset-0 flex items-center justify-center text-[10px] font-black uppercase tracking-[0.3em] ${isOnline ? 'text-white pl-4' : 'text-slate-400 pl-8'}`}>
+                            {isOnline ? 'GO OFFLINE' : 'GO ONLINE'}
+                        </span>
+                    </button>
+                </div>
             </div>
-        </div>
 
-        {/* Job Description Modal */}
-        <AnimatePresence>
-            {selectedJob && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-                    <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
-                        <button onClick={() => setSelectedJob(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"><X size={20} /></button>
-                        
-                        <div className="mb-6">
-                            <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest italic mb-2 block">MISSION DOSSIER</span>
-                            <h2 className="text-3xl font-[1000] italic uppercase tracking-tighter text-slate-900 leading-none mb-4">{selectedJob.service}</h2>
-                            <div className="flex items-center gap-3 py-3 border-y border-slate-100">
-                                <IndianRupee size={16} className="text-slate-400" />
-                                <span className="text-lg font-black italic">EST. PAY: ₹{selectedJob.basePrice}</span>
-                            </div>
-                        </div>
+            {/* Right Column: Mission Signal Stack */}
+            <div className="lg:col-span-4 flex flex-col gap-5 h-full max-h-[85vh]">
+                <div className="flex items-center justify-between px-2">
+                    <div className="flex flex-col">
+                        <h3 className="text-[11px] font-[1000] text-slate-600 uppercase tracking-[0.5em] italic">Mission Stack</h3>
+                        <p className="text-[8px] font-black text-slate-500 uppercase tracking-widest italic mt-1">Operational Signals</p>
+                    </div>
+                    <span className="bg-black text-white text-[9px] font-black px-3 py-1 rounded-full shadow-lg">{newRequests.length} SIGNALS</span>
+                </div>
 
-                        <div className="space-y-6 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
-                            <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client Description</h4>
-                                <p className="text-sm border-l-4 border-yellow-400 pl-4 py-2 text-slate-700 bg-slate-50 italic rounded-r-xl">{selectedJob.description || 'No additional details provided by client.'}</p>
-                            </div>
+                <div className="flex-1 overflow-y-auto pr-3 custom-scrollbar space-y-4 pb-10">
+                    <AnimatePresence mode="popLayout">
+                        {newRequests.length > 0 ? (
+                            newRequests.map((req) => (
+                                <motion.div
+                                    key={req._id}
+                                    layout
+                                    initial={{ x: 50, opacity: 0 }}
+                                    animate={{ x: 0, opacity: 1 }}
+                                    exit={{ x: -100, opacity: 0 }}
+                                    className="bg-white p-7 rounded-[2.5rem] border-2 border-slate-100 shadow-xl relative overflow-hidden group hover:border-blue-500/20 transition-all"
+                                >
+                                    <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:rotate-12 transition-transform duration-700"><Zap size={100} /></div>
 
-                            {selectedJob.imageUrl && (
-                                <div>
-                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Attached Intel</h4>
-                                    <div className="rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner">
-                                        <img src={selectedJob.imageUrl} alt="Mission Intel" className="w-full h-auto max-h-48 object-cover" />
+                                    <div className="flex items-center gap-5 mb-5 border-b border-yellow-100 pb-5">
+                                        <div className="w-14 h-14 bg-black rounded-2xl flex items-center justify-center shadow-lg border-b-4 border-yellow-600">
+                                            <Zap size={24} className="text-yellow-400 fill-yellow-400" />
+                                        </div>
+                                        <div className="flex-1 overflow-hidden">
+                                            <span className="text-[9px] font-black text-yellow-600 uppercase tracking-[0.4em] block mb-1 italic">MISSION DETECTED</span>
+                                            <h2 className="text-2xl font-[1000] uppercase italic tracking-tighter text-black truncate leading-none">
+                                                {req.service || 'URGENT WORK'}
+                                            </h2>
+                                        </div>
                                     </div>
-                                </div>
-                            )}
 
-                            <div>
-                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location Coordinates</h4>
-                                <p className="text-xs font-black text-slate-600">{selectedJob.location?.address || 'Location hidden until accepted'}</p>
+                                    <div className="space-y-4 mb-6">
+                                        <div className="flex flex-col">
+                                            <span className="text-[8px] font-black uppercase tracking-[0.4em] text-slate-500 mb-1 italic">Client</span>
+                                            <span className="text-md font-black italic tracking-tighter text-black uppercase truncate">{req.customerId?.name || 'Customer'}</span>
+                                        </div>
+                                        <div className="flex items-start gap-4 p-3 bg-yellow-50/50 rounded-2xl border border-yellow-100">
+                                            <MapPin size={14} className="text-yellow-600 mt-1" />
+                                            <p className="text-[10px] font-black text-slate-700 uppercase italic leading-tight line-clamp-2">{req.location?.address || 'Location Hidden'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => setSelectedJob(req)}
+                                            className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-[10px] uppercase italic tracking-widest hover:bg-slate-50 transition-all text-slate-900"
+                                        >
+                                            DETAILS
+                                        </button>
+                                        <button
+                                            onClick={() => handleAcceptMission(req._id)}
+                                            disabled={workingStatus === 'BUSY'}
+                                            className={`flex-[1.5] py-3 rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-xl transition-all flex items-center justify-center gap-2 ${workingStatus === 'BUSY' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-black text-white hover:scale-105 active:scale-95'}`}
+                                        >
+                                            {workingStatus === 'BUSY' ? 'ACTIVE' : <>ENGAGE <ArrowRight size={14} /></>}
+                                        </button>
+                                        <button
+                                            onClick={() => handleRejectMission(req._id)}
+                                            className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 font-black transition-all hover:bg-red-50 rounded-2xl italic flex-shrink-0 border-2 border-transparent hover:border-red-100"
+                                        >
+                                            <X size={16} />
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            ))
+                        ) : (
+                            <div className="h-64 flex flex-col items-center justify-center bg-slate-50 border-2 border-dashed border-slate-200 rounded-[3rem] opacity-50">
+                                <Loader2 className="animate-spin text-slate-300 mb-4" size={32} />
+                                <p className="text-[9px] font-black text-slate-400 uppercase tracking-[0.6em] italic text-center">Scanning Tactical Radar...</p>
                             </div>
-                        </div>
+                        )}
+                    </AnimatePresence>
+                </div>
+            </div>
 
-                        <div className="flex gap-4">
-                            <button
-                                onClick={() => { 
-                                    handleRejectMission(selectedJob._id);
-                                    setSelectedJob(null); 
-                                }}
-                                className="flex-1 py-5 bg-red-50 text-red-500 rounded-[2rem] border-2 border-red-100 font-[1000] text-xl uppercase italic tracking-tighter shadow-xl hover:bg-red-100 active:scale-[0.98] transition-all"
-                            >
-                                CANCEL
-                            </button>
-                            <button
-                                onClick={() => { setSelectedJob(null); handleAcceptMission(selectedJob._id); }}
-                                className="flex-[2] py-5 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
-                            >
-                                ACCEPT MISSION
-                            </button>
-                        </div>
+            {/* Job Description Modal */}
+            <AnimatePresence>
+                {selectedJob && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+                            <button onClick={() => setSelectedJob(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"><X size={20} /></button>
+
+                            <div className="mb-6">
+                                <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest italic mb-2 block">MISSION DOSSIER</span>
+                                <h2 className="text-3xl font-[1000] italic uppercase tracking-tighter text-slate-900 leading-none mb-4">{selectedJob.service}</h2>
+                                <div className="flex items-center gap-3 py-3 border-y border-slate-100">
+                                    <IndianRupee size={16} className="text-slate-400" />
+                                    <span className="text-lg font-black italic">EST. PAY: ₹{selectedJob.basePrice}</span>
+                                </div>
+                            </div>
+
+                            <div className="space-y-6 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                                <div>
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client Description</h4>
+                                    <p className="text-sm border-l-4 border-yellow-400 pl-4 py-2 text-slate-700 bg-slate-50 italic rounded-r-xl">{selectedJob.description || 'No additional details provided by client.'}</p>
+                                </div>
+
+                                {selectedJob.imageUrl && (
+                                    <div>
+                                        <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Attached Intel</h4>
+                                        <div className="rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner">
+                                            <img src={selectedJob.imageUrl} alt="Mission Intel" className="w-full h-auto max-h-48 object-cover" />
+                                        </div>
+                                    </div>
+                                )}
+
+                                <div>
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location Coordinates</h4>
+                                    <p className="text-xs font-black text-slate-600">{selectedJob.location?.address || 'Location hidden until accepted'}</p>
+                                </div>
+                            </div>
+
+                            <div className="flex gap-4">
+                                <button
+                                    onClick={() => {
+                                        handleRejectMission(selectedJob._id);
+                                        setSelectedJob(null);
+                                    }}
+                                    className="flex-1 py-5 bg-red-50 text-red-500 rounded-[2rem] border-2 border-red-100 font-[1000] text-xl uppercase italic tracking-tighter shadow-xl hover:bg-red-100 active:scale-[0.98] transition-all"
+                                >
+                                    CANCEL
+                                </button>
+                                <button
+                                    onClick={() => { setSelectedJob(null); handleAcceptMission(selectedJob._id); }}
+                                    className="flex-[2] py-5 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                                >
+                                    ACCEPT MISSION
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
-    </div>
+                )}
+            </AnimatePresence>
+        </div>
     );
 };
 
@@ -674,7 +718,7 @@ const HistoryView = ({ user, stats }) => {
                         <h1 className="text-7xl font-[1000] italic tracking-tighter text-slate-900 leading-none">{(stats?.walletBalance || 0).toLocaleString('en-IN')}</h1>
                     </div>
                 </div>
-                
+
             </header>
 
             <div className="space-y-6">
@@ -862,7 +906,7 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
                         {summaryJob?.finalPrice || summaryJob?.basePrice || '0'}
                     </h3>
                 </div>
-                
+
                 <div className="pt-8 border-t border-white/10 opacity-60">
                     <div className="text-center">
                         <p className="text-[8px] font-black uppercase tracking-widest mb-1">Security Status</p>

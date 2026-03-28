@@ -683,7 +683,7 @@ const BookingPage = () => {
                                     {imageFile && (
                                         <div className="relative w-full h-40 border-2 border-black rounded-xl overflow-hidden mt-2">
                                             <img src={imageFile} alt="Preview" className="w-full h-full object-cover" />
-                                            <button onClick={() => setImageFile(null)} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 border-2 border-black rounded-lg"><X size={14}/></button>
+                                            <button onClick={() => setImageFile(null)} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 border-2 border-black rounded-lg"><X size={14} /></button>
                                         </div>
                                     )}
                                 </div>
