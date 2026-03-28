@@ -32,12 +32,25 @@ router.post('/create', async (req, res) => {
             }
         });
 
-        // 2. Filter by Skill (as requested: "job sare bhiya jo us service provide kr rhe unko jana nchhaiye")
+        // 2. Filter by Skill (as requested: "job v unhi ko jana chhaiye jinka service same ho")
+        const searchTerm = serviceType.toLowerCase().trim();
+        const serviceMatches = (val) => {
+            if (!val) return false;
+            const s = val.toLowerCase().trim();
+            // Same logic as display filter
+            if (s === searchTerm) return true;
+            if (s.includes(searchTerm)) return true;
+            if (searchTerm.includes(s) && s.length >= 5) return true;
+            return false;
+        };
+
         const targetPartners = nearestPartners.filter(p => {
-            if (!p.skills || p.skills.length === 0) return false;
-            const searchTerm = serviceType.toLowerCase();
-            return p.skills.some(s => s.toLowerCase().includes(searchTerm) || searchTerm.includes(s.toLowerCase()));
+            const hasCategory = p.serviceCategory && serviceMatches(p.serviceCategory);
+            const hasSkill = p.skills && Array.isArray(p.skills) && p.skills.some(s => serviceMatches(s));
+            return hasCategory || hasSkill;
         });
+
+        console.log(`📡 Dispatching: Service "${serviceType}" | Targeted Partners: ${targetPartners.length}`);
 
         const targetPartnerIds = targetPartners.map(p => p._id);
         if (targetPartnerIds.length === 0) {

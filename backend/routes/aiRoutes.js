@@ -52,7 +52,7 @@ router.post("/interpret", async (req, res) => {
 
         // --- PARTNER SEARCH LOGIC ---
         // Find approved, online, and available workers near the customer (7km radius)
-        const workers = await PartnerProfile.find({
+        const allNearbyWorkers = await PartnerProfile.find({
             status: 'APPROVED',
             isOnline: true,
             workingStatus: 'AVAILABLE',
@@ -62,10 +62,37 @@ router.post("/interpret", async (req, res) => {
                     $maxDistance: 7000 
                 }
             }
-        }).select('name phone location rating skills isOnline workingStatus');
+        }).select('name phone location rating skills serviceCategory isOnline workingStatus');
 
-        // Return all nearby workers as requested ("list all bhiyas there")
-        const matchedWorkers = workers;
+        // Filter: only show partners who provide the EXACT detected service
+        // Only match if partner's skill/category contains the service name (or is equal)
+        // We do NOT do reverse matching (searchTerm.includes(skill)) to avoid false positives
+        const searchTerm = detectedService.toLowerCase().trim();
+        console.log(`🤖 DEBUG: Detected Service: "${detectedService}" | Searching for: "${searchTerm}"`);
+
+        const serviceMatches = (partnerValue) => {
+            if (!partnerValue) return false;
+            const val = partnerValue.toLowerCase().trim();
+            // 1. Exact match
+            if (val === searchTerm) return true;
+            // 2. Contains (directional)
+            if (val.includes(searchTerm)) return true;
+            // 3. Backward match (only for long strings)
+            if (searchTerm.includes(val) && val.length >= 5) return true;
+            return false;
+        };
+
+        const matchedWorkers = allNearbyWorkers.filter(p => {
+            const isMatch = (
+                (p.serviceCategory && serviceMatches(p.serviceCategory)) ||
+                (p.skills && Array.isArray(p.skills) && p.skills.some(s => serviceMatches(s)))
+            );
+            if (isMatch) console.log(`✅ MATCH: ${p.name}`);
+            else console.log(`❌ NO MATCH: ${p.name}`);
+            return isMatch;
+        });
+
+        console.log(`🔍 LOG: Total Online: ${allNearbyWorkers.length} | Matched: ${matchedWorkers.length}`);
 
         // Use price directly from Python model
         const estimatedPrice = (allMatches.length > 0 && allMatches[0].price) ? allMatches[0].price : 300;

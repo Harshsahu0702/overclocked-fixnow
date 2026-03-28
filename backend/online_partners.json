@@ -1,0 +1,23 @@
+[
+  {
+    "name": "Ram kumar",
+    "sk": [
+      "Electrician",
+      "Cleaning",
+      "AC Repair",
+      "Plumber",
+      "Carpenter"
+    ]
+  },
+  {
+    "name": "Harsh Sahu",
+    "sk": [
+      "Electrician",
+      "Plumber",
+      "AC Repair",
+      "Painter",
+      "Carpenter",
+      "Cleaning"
+    ]
+  }
+]

@@ -458,7 +458,7 @@ const BookingPage = () => {
                                         disabled={loading || aiResult.workers.length === 0}
                                         className="w-full py-6 bg-black text-white rounded-[2.5rem] border-4 border-black font-black text-2xl uppercase italic shadow-[6px_6px_0_0_#FACC15] hover:shadow-none hover:translate-x-1 hover:translate-y-1 disabled:opacity-30 transition-all"
                                     >
-                                        {loading ? 'Wait...' : 'Request Pro Bhiyas'}
+                                        {loading ? 'Wait...' : 'Find Bhaiya!'}
                                     </button>
                                     <p className="text-[10px] font-black uppercase text-center mt-4 text-green-600">The first one to accept gets the job!</p>
                                 </div>
