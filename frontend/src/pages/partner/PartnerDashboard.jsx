@@ -770,96 +770,205 @@ const HistoryView = ({ user, stats }) => {
 };
 
 
-const ProfileView = ({ user, stats, logout }) => (
-    <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="p-8 space-y-8 max-w-5xl mx-auto bg-[#f8f9fa]">
-        {/* Profile Identity Card */}
-        <div className="bg-white p-12 rounded-[5rem] border border-slate-100 relative group overflow-hidden shadow-2xl">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,_var(--tw-gradient-stops))] from-yellow-100/20 via-transparent to-transparent opacity-50" />
+const ProfileView = ({ user, stats, fetchDashboard }) => {
+    const [isEditing, setIsEditing] = useState(false);
+    const [formData, setFormData] = useState({
+        name: user?.name || '',
+        phone: user?.phone || '',
+        upiId: user?.upiId || '',
+        bankName: user?.bankName || '',
+        acceptsCash: user?.acceptsCash || false,
+        skills: stats?.skills?.join(', ') || ''
+    });
+    const [loading, setLoading] = useState(false);
 
-            <div className="relative z-10 flex flex-col lg:flex-row items-center gap-16 text-left">
-                <div className="relative">
-                    <div className="w-56 h-56 bg-white rounded-[4rem] p-3 border-2 border-slate-100 relative overflow-hidden flex items-center justify-center shadow-3xl group-hover:border-black/10 transition-all duration-700">
-                        <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt="agent_pfp" className="w-full h-full object-cover rounded-[3.5rem]" />
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer backdrop-blur-sm">
-                            <p className="text-[10px] font-black text-white uppercase tracking-[0.4em] italic">Update Identity</p>
-                        </div>
-                    </div>
-                    <div className="absolute -bottom-4 -right-4 w-18 h-18 bg-black rounded-3xl flex items-center justify-center text-white shadow-3xl border-8 border-white">
-                        <Award size={36} className="text-yellow-400" />
-                    </div>
+    const handleUpdate = async () => {
+        setLoading(true);
+        try {
+            const token = localStorage.getItem('token');
+            const res = await axios.post('http://localhost:5000/api/partners/complete-profile', {
+                ...formData,
+                skills: formData.skills.split(',').map(s => s.trim()).filter(s => s)
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.data.success) {
+                // Update local storage user info
+                const updatedUser = { ...user, ...formData };
+                localStorage.setItem('user', JSON.stringify(updatedUser));
+                setIsEditing(false);
+                fetchDashboard();
+                alert("Intel Updated! 🚀");
+            }
+        } catch (err) {
+            alert(err.response?.data?.message || "Update failed");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-6 lg:p-12 max-w-5xl mx-auto space-y-8 pb-40">
+            {/* Profile Header */}
+            <div className="bg-white rounded-[3rem] p-10 border border-slate-100 shadow-2xl relative overflow-hidden group">
+                <div className="absolute top-0 right-0 p-12 opacity-[0.03] group-hover:rotate-12 transition-transform duration-1000">
+                    <Award size={200} />
                 </div>
 
-                <div className="flex-1 space-y-8">
-                    <div>
-                        <div className="flex items-center gap-4 mb-4">
-                            <span className="px-4 py-1.5 bg-yellow-400 text-black text-[10px] font-black uppercase italic tracking-[0.2em] rounded-xl shadow-lg">OFFICIAL PARTNER</span>
-                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 rounded-full border border-emerald-100">
-                                <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                                <span className="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active Link</span>
-                            </div>
+                <div className="flex flex-col md:flex-row items-center gap-10 relative z-10">
+                    <div className="relative">
+                        <div className="w-40 h-40 rounded-[2.5rem] bg-slate-50 p-2 border-2 border-slate-100 overflow-hidden shadow-xl">
+                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user?.name}`} alt="avatar" className="w-full h-full object-cover rounded-[2rem]" />
                         </div>
-                        <h2 className="text-7xl font-[1000] tracking-tighter italic uppercase text-slate-900 leading-none mb-4">{user?.name}</h2>
-                        <p className="text-slate-400 font-black text-xs uppercase tracking-[0.3em] italic">Partner ID: #{user?._id?.slice(-8).toUpperCase()}</p>
+                        <div className="absolute -bottom-2 -right-2 w-10 h-10 bg-black rounded-xl border-4 border-white flex items-center justify-center text-white shadow-lg">
+                            <Settings size={18} strokeWidth={3} className={isEditing ? 'animate-spin' : ''} />
+                        </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-6 border-t border-slate-50 pt-8">
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Contact String</span>
-                            <p className="text-md font-black italic text-slate-900">+91 {user?.phone}</p>
-                        </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Bureau Status</span>
-                            <div className="flex items-center gap-2">
-                                <Shield size={14} className="text-emerald-500" />
-                                <p className="text-md font-black italic text-slate-900 uppercase">FULLY VERIFIED</p>
+                    <div className="flex-1 text-center md:text-left">
+                        <div className="flex flex-col md:flex-row items-center justify-between gap-4 mb-4">
+                            <div className="inline-flex items-center gap-2 px-3 py-1 bg-emerald-50 text-emerald-600 rounded-full border border-emerald-100">
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                                <span className="text-[8px] font-black uppercase tracking-widest italic">Fully Synchronized</span>
                             </div>
+                            <button
+                                onClick={() => isEditing ? handleUpdate() : setIsEditing(true)}
+                                disabled={loading}
+                                className={`px-8 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest italic transition-all shadow-xl active:scale-95 ${isEditing ? 'bg-emerald-500 text-white hover:bg-emerald-600' : 'bg-black text-white hover:bg-slate-800'}`}
+                            >
+                                {loading ? 'SAVING...' : isEditing ? 'COMMIT UPDATES' : 'EDIT PROFILE'}
+                            </button>
                         </div>
-                        <div className="flex flex-col">
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Deployment Date</span>
-                            <p className="text-md font-black italic text-slate-900">Oct 2024</p>
-                        </div>
+                        {isEditing ? (
+                            <input
+                                type="text"
+                                value={formData.name}
+                                onChange={e => setFormData({ ...formData, name: e.target.value })}
+                                className="text-4xl lg:text-5xl font-[1000] italic uppercase tracking-tighter text-slate-900 bg-slate-50 border-b-4 border-black outline-none px-4 py-2 w-full max-w-md"
+                            />
+                        ) : (
+                            <h2 className="text-5xl font-[1000] italic uppercase tracking-tighter text-slate-900 leading-none mb-2">{user?.name}</h2>
+                        )}
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] italic mt-2">Partner ID: #{user?._id?.slice(-8).toUpperCase()}</p>
                     </div>
                 </div>
             </div>
-        </div>
 
-        {/* Details & Settings Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-                { icon: <UserIcon size={22} />, label: 'Personal Dossier', detail: 'Manage your primary records' },
-                { icon: <Award size={22} />, label: 'Mastered Skills', detail: `${stats?.skills?.length || 0} Professional Modules` },
-                { icon: <FileText size={22} />, label: 'Verified Documents', detail: 'KYC & Legal Identification' },
-                { icon: <Bell size={22} />, label: 'Interface Alerts', detail: 'Notification parameters' },
-                { icon: <Settings size={22} />, label: 'System Preferences', detail: 'App & Hardware tuning' },
-                { icon: <LogOut size={22} />, label: 'Terminate Uplink', detail: 'Secure session closure', danger: true, action: logout }
-            ].map((item, i) => (
-                <button
-                    key={i}
-                    onClick={item.action}
-                    className={`p-10 rounded-[3.5rem] border-2 flex flex-col items-start gap-6 group transition-all duration-500 text-left ${item.danger
-                        ? 'bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200'
-                        : 'bg-white border-slate-50 hover:border-black/10 hover:shadow-2xl shadow-sm'
-                        }`}
-                >
-                    <div className={`w-16 h-16 rounded-[1.5rem] flex items-center justify-center transition-all duration-700 shadow-xl ${item.danger
-                        ? 'bg-red-500 text-white'
-                        : 'bg-black text-white group-hover:bg-yellow-400 group-hover:text-black group-hover:rotate-6'
-                        }`}>
-                        {React.cloneElement(item.icon, { strokeWidth: 2.5 })}
+            {/* Details Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Personal Info */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-lg space-y-8">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 italic flex items-center gap-2 border-b border-slate-50 pb-4">
+                        <FileText size={16} /> Personal Identification
+                    </h3>
+                    <div className="space-y-6">
+                        {isEditing ? (
+                            <>
+                                <EditDetailItem label="Legal Frequency (Phone)" value={formData.phone} onChange={v => setFormData({ ...formData, phone: v })} />
+                                <EditDetailItem label="Operational Name" value={formData.name} onChange={v => setFormData({ ...formData, name: v })} />
+                            </>
+                        ) : (
+                            <>
+                                <DetailItem label="Contact Frequency" value={`+91 ${user?.phone}`} />
+                                <DetailItem label="Assigned Sector" value={stats?.serviceCategory || 'ELITE PARTNER'} />
+                                <DetailItem label="Bureau Status" value={user?.status || 'APPROVED'} />
+                            </>
+                        )}
+                        <DetailItem label="Deployment Date" value="Oct 2024" />
                     </div>
-                    <div>
-                        <span className={`text-lg font-[1000] uppercase italic tracking-tighter block mb-1 ${item.danger ? 'text-red-500' : 'text-slate-900'}`}>{item.label}</span>
-                        <span className="text-[9px] font-black text-slate-300 uppercase tracking-[0.2em] italic">{item.detail}</span>
+                </div>
+
+                {/* Financial/Payment */}
+                <div className="bg-white p-10 rounded-[2.5rem] border border-slate-100 shadow-lg space-y-8">
+                    <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-4 italic flex items-center gap-2 border-b border-slate-50 pb-4">
+                        <Wallet size={16} /> Financial Uplink
+                    </h3>
+                    <div className="space-y-6">
+                        {isEditing ? (
+                            <>
+                                <EditDetailItem label="UPI ID Matrix" value={formData.upiId} onChange={v => setFormData({ ...formData, upiId: v })} />
+                                <EditDetailItem label="Bank Node" value={formData.bankName} onChange={v => setFormData({ ...formData, bankName: v })} />
+                                <div className="flex items-center justify-between p-4 bg-slate-50 rounded-2xl">
+                                    <span className="text-[8px] font-black text-slate-400 uppercase italic">Cash Protocol</span>
+                                    <button onClick={() => setFormData({ ...formData, acceptsCash: !formData.acceptsCash })} className={`w-12 h-6 rounded-full transition-all p-1 ${formData.acceptsCash ? 'bg-emerald-500' : 'bg-slate-300'}`}>
+                                        <div className={`w-4 h-4 bg-white rounded-full transition-all ${formData.acceptsCash ? 'translate-x-6' : 'translate-x-0'}`} />
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <DetailItem label="UPI Identity" value={user?.upiId || 'Not Linked'} mono />
+                                <DetailItem label="Cash Protocol" value={user?.acceptsCash ? 'ENABLED' : 'DISABLED'} />
+                                <DetailItem label="Total Lifetime Earnings" value={`₹${stats?.totalEarnings || 0}`} />
+                                <DetailItem label="Interface Rating" value={`${stats?.rating || 5.0} ★`} />
+                            </>
+                        )}
                     </div>
-                    {!item.danger && (
-                        <div className="mt-4 w-full h-1 bg-slate-50 rounded-full overflow-hidden">
-                            <div className="w-0 group-hover:w-full h-full bg-slate-900 transition-all duration-1000" />
-                        </div>
-                    )}
-                </button>
-            ))}
-        </div>
-    </motion.div>
+                </div>
+            </div>
+
+            {/* Skills Section (NEW) */}
+            <div className="bg-white p-10 rounded-[3rem] border border-slate-100 shadow-xl overflow-hidden relative">
+                <div className="absolute top-0 right-0 p-8 opacity-[0.03] rotate-12 -mr-8 -mt-8"><Zap size={150} /></div>
+                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mb-8 italic flex items-center gap-2 border-b border-slate-50 pb-4 relative z-10">
+                    <Award size={16} /> Mastered Skillsets
+                </h3>
+                {isEditing ? (
+                    <div className="space-y-4 relative z-10">
+                        <label className="text-[8px] font-black text-slate-300 uppercase italic ml-2">Define Skills (Comma separated)</label>
+                        <textarea
+                            value={formData.skills}
+                            onChange={e => setFormData({ ...formData, skills: e.target.value })}
+                            rows={3}
+                            placeholder="Plumbing, Electrical, Carpentry"
+                            className="w-full bg-slate-50 border-2 border-slate-100 rounded-3xl p-6 font-bold text-slate-900 italic focus:border-black outline-none transition-all"
+                        ></textarea>
+                    </div>
+                ) : (
+                    <div className="flex flex-wrap gap-4 relative z-10">
+                        {stats?.skills?.length > 0 ? stats.skills.map((skill, i) => (
+                            <span key={i} className="px-6 py-3 bg-black text-yellow-400 rounded-2xl text-xs font-black uppercase italic shadow-lg border border-yellow-400/20">{skill}</span>
+                        )) : (
+                            <p className="text-slate-300 font-black italic uppercase tracking-widest text-xs py-4">No skills registered in system database...</p>
+                        )}
+                    </div>
+                )}
+                {!isEditing && (
+                    <div className="mt-8 pt-6 border-t border-slate-50 text-right">
+                        <p className="text-[8px] font-black text-slate-300 uppercase tracking-widest italic">Skills are verified periodically by base command.</p>
+                    </div>
+                )}
+            </div>
+
+            {isEditing && (
+                <div className="flex gap-4">
+                    <button onClick={() => setIsEditing(false)} className="flex-1 py-6 bg-slate-100 text-slate-500 rounded-[2.5rem] font-black text-lg uppercase italic tracking-tighter hover:bg-red-50 hover:text-red-500 transition-all">ABORT CHANGES</button>
+                    <button onClick={handleUpdate} disabled={loading} className="flex-[2] py-6 bg-emerald-500 text-white rounded-[2.5rem] font-black text-lg uppercase italic tracking-tighter hover:scale-[1.02] shadow-2xl transition-all">
+                        {loading ? 'SYNCHRONIZING...' : 'COMMIT ALL UPDATES'}
+                    </button>
+                </div>
+            )}
+        </motion.div>
+    );
+};
+
+const DetailItem = ({ label, value, mono }) => (
+    <div className="flex flex-col">
+        <span className="text-[8px] font-black text-slate-300 uppercase tracking-[0.2em] leading-none mb-2 italic">{label}</span>
+        <span className={`text-lg font-[1000] italic tracking-tight text-slate-800 uppercase ${mono ? 'font-mono' : ''}`}>{value || 'N/A'}</span>
+    </div>
+);
+
+const EditDetailItem = ({ label, value, onChange }) => (
+    <div className="flex flex-col gap-2">
+        <label className="text-[8px] font-black text-slate-300 uppercase italic ml-2">{label}</label>
+        <input
+            type="text"
+            value={value}
+            onChange={e => onChange(e.target.value)}
+            className="w-full bg-slate-50 border-2 border-slate-100 rounded-2xl px-6 py-3 font-bold text-slate-900 italic focus:border-black outline-none transition-all"
+        />
+    </div>
 );
 
 
@@ -1530,7 +1639,7 @@ const PartnerDashboard = () => {
                         )}
 
                         {activeTab === 'history' && <HistoryView key="history" user={user} stats={stats} />}
-                        {activeTab === 'profile' && <ProfileView key="profile" user={user} stats={stats} logout={handleLogout} />}
+                        {activeTab === 'profile' && <ProfileView key="profile" user={user} stats={stats} fetchDashboard={fetchDashboard} logout={handleLogout} />}
                     </AnimatePresence>
                 </div>
 

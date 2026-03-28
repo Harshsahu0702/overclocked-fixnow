@@ -71,7 +71,8 @@ router.post('/complete-profile', authMiddleware, async (req, res) => {
             upiId,
             qrCodeImage,
             acceptsCash,
-            bankName
+            bankName,
+            skills
         } = req.body;
 
         const profile = await PartnerProfile.findById(req.user.id);
@@ -84,6 +85,7 @@ router.post('/complete-profile', authMiddleware, async (req, res) => {
         if (upiId) profile.upiId = upiId;
         if (qrCodeImage) profile.qrCodeImage = qrCodeImage;
         if (bankName) profile.bankName = bankName;
+        if (skills && Array.isArray(skills)) profile.skills = skills;
         profile.acceptsCash = (acceptsCash === true || acceptsCash === "true");
 
         // Optional: Location update if provided in [lng, lat] format
