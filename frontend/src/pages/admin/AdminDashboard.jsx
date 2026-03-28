@@ -160,18 +160,7 @@ const AdminDashboard = () => {
                     </button>
                 </nav>
 
-                <div className="mt-10 p-6 bg-yellow-400/10 rounded-3xl border-2 border-yellow-400 border-dashed">
-                    <p className="text-[10px] font-black uppercase tracking-widest text-yellow-400 mb-2">Total System Revenue</p>
-                    <h2 className="text-4xl font-[1000] italic text-white flex items-center tracking-tighter">
-                        <IndianRupee size={28} /> {(stats?.revenue || 0).toLocaleString()}
-                    </h2>
-                    <button
-                        onClick={() => { fetchStats(); fetchAllMissions(); fetchPartners(); }}
-                        className="w-full mt-4 py-2 bg-black text-yellow-400 border-2 border-dashed border-yellow-400 rounded-xl text-[10px] font-black uppercase hover:bg-yellow-400 hover:text-black transition-all"
-                    >
-                        Force Refresh
-                    </button>
-                </div>
+
             </div>
 
             {/* Main Content */}
@@ -199,11 +188,7 @@ const AdminDashboard = () => {
                                 <p className="text-xs font-[1000] uppercase tracking-widest text-yellow-400 mb-4">Active Partners</p>
                                 <h3 className="text-5xl font-black italic relative z-10 text-yellow-400 tracking-tight">{stats?.activePartners || 0} / {stats?.totalPartners || 0}</h3>
                             </div>
-                            <div className="bg-emerald-400 p-10 rounded-[3rem] border-4 border-black shadow-[12px_12px_0_0_#000] relative overflow-hidden group">
-                                <TrendingUp className="absolute -right-6 -bottom-6 text-black/5" size={120} strokeWidth={1} />
-                                <p className="text-xs font-[1000] uppercase tracking-widest text-black/40 mb-4">5% System platform profit</p>
-                                <h3 className="text-5xl font-black italic relative z-10 tracking-tight">₹{((stats?.revenue || 0) * 0.05).toFixed(0)}</h3>
-                            </div>
+
                             <div className="bg-white p-10 rounded-[3rem] border-4 border-black shadow-[12px_12px_0_0_#000] relative overflow-hidden group">
                                 <ShieldCheck className="absolute -right-6 -bottom-6 text-slate-50" size={120} strokeWidth={1} />
                                 <p className="text-xs font-[1000] uppercase tracking-widest text-zinc-400 mb-4">Total App Users</p>
