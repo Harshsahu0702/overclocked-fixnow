@@ -133,7 +133,7 @@ const PartnerSignup = () => {
         }
 
         try {
-            const res = await axios.post('http://192.168.121.253:5000/api/users/register', {
+            const res = await axios.post('http://10.74.227.253:5000/api/users/register', {
                 ...formData,
                 role: 'partner',
                 location: {

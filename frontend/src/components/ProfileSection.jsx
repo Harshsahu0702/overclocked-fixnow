@@ -21,7 +21,7 @@ const ProfileSection = ({ user, onClose, onUpdate }) => {
     const fetchHistory = async () => {
         if (!user?._id) return;
         try {
-            const res = await axios.get(`http://192.168.121.253:5000/api/jobs/history/${user._id}?role=${user.role || 'customer'}`);
+            const res = await axios.get(`http://10.74.227.253:5000/api/jobs/history/${user._id}?role=${user.role || 'customer'}`);
             if (res.data.success) {
                 setHistory(res.data.jobs);
             }
@@ -34,7 +34,7 @@ const ProfileSection = ({ user, onClose, onUpdate }) => {
 
     const handleUpdate = async () => {
         try {
-            const res = await axios.patch(`http://192.168.121.253:5000/api/users/${user._id}`, {
+            const res = await axios.patch(`http://10.74.227.253:5000/api/users/${user._id}`, {
                 ...formData,
                 role: user.role
             });

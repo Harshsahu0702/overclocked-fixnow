@@ -199,7 +199,7 @@ const BookingPage = () => {
 
     const fetchActiveJob = async () => {
         try {
-            const res = await axios.get(`http://192.168.121.253:5000/api/jobs/active/${user._id}?role=customer`);
+            const res = await axios.get(`http://10.74.227.253:5000/api/jobs/active/${user._id}?role=customer`);
             if (res.data.job) {
                 setActiveJob(res.data.job);
                 setViewState('tracking');
@@ -237,7 +237,7 @@ const BookingPage = () => {
 
         setLoading(true);
         try {
-            const res = await axios.post('http://192.168.121.253:5000/api/ai/interpret', {
+            const res = await axios.post('http://10.74.227.253:5000/api/ai/interpret', {
                 text: searchText,
                 lat: location.lat,
                 lng: location.lng
@@ -267,7 +267,7 @@ const BookingPage = () => {
         if (!aiResult?.workers || aiResult.workers.length === 0) return alert("Pehle koi Bhaiya milne dijiye!");
         setLoading(true);
         try {
-            const res = await axios.post('http://192.168.121.253:5000/api/jobs/create', {
+            const res = await axios.post('http://10.74.227.253:5000/api/jobs/create', {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
                 description: query,
@@ -295,7 +295,7 @@ const BookingPage = () => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`http://192.168.121.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);

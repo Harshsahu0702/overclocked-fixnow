@@ -157,7 +157,7 @@ const CompleteProfileScreen = ({ user, onComplete }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://192.168.121.253:5000/api/partners/complete-profile', formData, {
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/complete-profile', formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
@@ -544,7 +544,7 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                             onClick={async () => {
                                 if (!confirm('ABORT MISSION?')) return;
                                 try {
-                                    const res = await axios.patch(`http://192.168.121.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+                                    const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
                                     if (res.data.success) {
                                         socket.emit('job_status_update', {
                                             jobId: activeJob._id,
@@ -581,7 +581,7 @@ const HistoryView = ({ user, stats }) => {
     useEffect(() => {
         const fetchLedger = async () => {
             try {
-                const res = await axios.get(`http://192.168.121.253:5000/api/partners/ledger/${user._id}`);
+                const res = await axios.get(`http://10.74.227.253:5000/api/partners/ledger/${user._id}`);
                 if (res.data.success) setLedger(res.data.jobs);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
@@ -887,11 +887,11 @@ const PartnerDashboard = () => {
         if (!user?._id) return;
         try {
             // STEP 1: Check Mission Health FIRST (Triggers self-healing if needed)
-            const jobRes = await axios.get(`http://192.168.121.253:5000/api/jobs/active/${user._id}?role=partner`);
+            const jobRes = await axios.get(`http://10.74.227.253:5000/api/jobs/active/${user._id}?role=partner`);
 
             // STEP 2: Fetch Stats (Gets the updated status after potential healing)
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://192.168.121.253:5000/api/partners/stats/${user._id}`, {
+            const res = await axios.get(`http://10.74.227.253:5000/api/partners/stats/${user._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -1096,7 +1096,7 @@ const PartnerDashboard = () => {
         setError('');
         try {
             // Using a dedicated partner login route for PRO dashboard
-            const res = await axios.post('http://192.168.121.253:5000/api/partners/login', loginData);
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/login', loginData);
             if (res.data.success) {
                 const { token, user } = res.data;
                 localStorage.setItem('token', token);
@@ -1121,7 +1121,7 @@ const PartnerDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://192.168.121.253:5000/api/partners/toggle-status', {
+            const res = await axios.post('http://10.74.227.253:5000/api/partners/toggle-status', {
                 userId: user._id,
                 isOnline: newState
             }, {
@@ -1153,7 +1153,7 @@ const PartnerDashboard = () => {
             setActiveJob({ ...jobToAccept, status: 'ACCEPTED' });
 
             const token = localStorage.getItem('token');
-            const res = await axios.post(`http://192.168.121.253:5000/api/jobs/${jobId}/accept`, {
+            const res = await axios.post(`http://10.74.227.253:5000/api/jobs/${jobId}/accept`, {
                 partnerId: user._id
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -1183,7 +1183,7 @@ const PartnerDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.patch(`http://192.168.121.253:5000/api/jobs/${activeJob._id}/status`, {
+            const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${activeJob._id}/status`, {
                 status,
                 otp: status === 'IN_PROGRESS' ? otpInput : undefined
             }, {
@@ -1216,7 +1216,7 @@ const PartnerDashboard = () => {
         if (!paymentRequest) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.patch(`http://192.168.121.253:5000/api/jobs/${paymentRequest.jobId}/status`, {
+            const res = await axios.patch(`http://10.74.227.253:5000/api/jobs/${paymentRequest.jobId}/status`, {
                 status: 'PAID',
                 paymentMethod: paymentRequest.method || 'UPI'
             }, {
