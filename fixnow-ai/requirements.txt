@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+pydantic
+requests
+python-dotenv
+httpx
+gunicorn
+# To install: pip install -r requirements.txt
