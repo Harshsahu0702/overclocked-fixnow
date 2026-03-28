@@ -4,7 +4,13 @@ import logging
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from model import classify_service
+from dotenv import load_dotenv
+
+# Load environment variables from ../.env (root)
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
+
+# Refresh model configuration with loaded environment
+from model import classify_service, HF_TOKEN
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)

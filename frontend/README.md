@@ -1,16 +1,72 @@
-# React + Vite
+# 🚀 FixNow Frontend - Pro Dashboard & Marketplace
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+The UI/UX layer of FixNow, designed for speed and clarity. We've built two distinct experiences: a streamlined customer booking flow and a high-performance **"MissionControl"** dashboard for partners.
 
-Currently, two official plugins are available:
+---
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## 🛠️ Tech Stack & Styling
 
-## React Compiler
+- **Framework**: React.js (Vite)
+- **Styling**: Tailwind CSS + Framer Motion (for premium animations)
+- **Icons**: Lucide React (Tactical look and feel)
+- **State**: React Hooks (Global/Context state for Auth & Sockets)
+- **API Handling**: Axios (with centralized interceptors & error mapping)
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+---
 
-## Expanding the ESLint configuration
+## 📂 Project Structure
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+```text
+src/
+├── components/          # Reusable UI components (Auth, Profile, UI Kit)
+├── context/             # AppContext for User, Auth & Global State
+├── pages/               # High-level route components
+│   ├── customer/        # LandingPage & BookingPage (The search loop)
+│   ├── partner/         # PartnerSignup & PartnerDashboard (MissionControl)
+│   └── admin/           # AdminDashboard (Verification system)
+├── services/            # Bridge to the outer world
+│   ├── api.js           # Axios instance (Centralized API keys/tokens)
+│   └── socket.js        # Singleton socket.io-client instance
+└── utils/               # Map calculations & distance helpers
+```
+
+---
+
+## 🏗️ The "MissionControl" HUD (Partner UI)
+
+Partners don't just "see" jobs; they manage missions. The latest HUD features:
+- **Interactive Job Feed**: Accept or decline missions with real-time feedback.
+- **Dynamic Skill Filtering**: Partners only see jobs matching their specialized skills.
+- **Live Dispatch Stepper**: Visual tracking of a job's progress (Accept ➔ Start Work ➔ Complete).
+- **Tactical Dark Theme**: Optimized for outdoor visibility and reduced battery usage.
+
+---
+
+## 🌊 Latest Frontend Features
+
+1.  **🔍 Searchable Skills Modal**: In the partner signup flow, choose from 20+ specialized service categories with a live search filter.
+2.  **🛰️ Real-time Geolocation Integration**: Partners emit their live GPS coordinates to the server, which can be tracked by customers.
+3.  **💬 Context-Aware Auth**: Automatic redirection based on user role (`Customer`, `Partner`, or `Admin`).
+4.  **⚡ Instant Updates**: Using Socket.io listeners to update job states without page refreshes.
+
+---
+
+## 📡 API & Socket Usage
+
+### ⚙️ API Centralization (`src/services/api.js`)
+We use a global Axios instance that simplifies complex backend calls:
+```javascript
+import api from './services/api';
+const response = await api.get('/users/profile'); // JWT added automatically
+```
+
+### ⚡ Socket Synchronization (`src/services/socket.js`)
+A single socket connection is used throughout the app lifecycle, joining specialized rooms for role-based notifications.
+
+---
+
+## 🚀 Setup Instructions
+
+1.  `cd frontend`
+2.  `npm install`
+3.  `npm run dev` (Runs on `http://localhost:5173`)
