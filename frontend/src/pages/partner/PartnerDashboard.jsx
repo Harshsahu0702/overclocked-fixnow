@@ -124,7 +124,10 @@ const AuthScreen = ({ handleLogin, loginData, setLoginData, showPass, setShowPas
 );
 
 
-const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnline, newRequests, setNewRequests, handleAcceptMission }) => (
+const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnline, newRequests, setNewRequests, handleAcceptMission }) => {
+    const [selectedJob, setSelectedJob] = React.useState(null);
+
+    return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 p-4 lg:p-6 bg-[#fafaf0] pb-40">
         {/* Left Column: Tactical Radar & Controls */}
         <div className="lg:col-span-8 flex flex-col gap-5">
@@ -255,17 +258,23 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
 
                                 <div className="flex gap-2">
                                     <button
+                                        onClick={() => setSelectedJob(req)}
+                                        className="flex-1 py-3 bg-white border-2 border-slate-200 rounded-2xl font-black text-[10px] uppercase italic tracking-widest hover:bg-slate-50 transition-all text-slate-900"
+                                    >
+                                        DETAILS
+                                    </button>
+                                    <button
                                         onClick={() => handleAcceptMission(req._id)}
                                         disabled={workingStatus === 'BUSY'}
-                                        className={`flex-1 py-4 rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-xl transition-all flex items-center justify-center gap-3 ${workingStatus === 'BUSY' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-black text-white hover:scale-105 active:scale-95'}`}
+                                        className={`flex-[1.5] py-3 rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-xl transition-all flex items-center justify-center gap-2 ${workingStatus === 'BUSY' ? 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200' : 'bg-black text-white hover:scale-105 active:scale-95'}`}
                                     >
-                                        {workingStatus === 'BUSY' ? 'MISSION ACTIVE' : <>ENGAGE <ArrowRight size={16} /></>}
+                                        {workingStatus === 'BUSY' ? 'ACTIVE' : <>ENGAGE <ArrowRight size={14} /></>}
                                     </button>
                                     <button
                                         onClick={() => setNewRequests(prev => prev.filter(r => r._id !== req._id))}
-                                        className="px-6 py-4 text-slate-300 hover:text-red-500 font-black uppercase tracking-widest text-[8px] transition-all hover:bg-red-50 rounded-2xl italic"
+                                        className="w-12 h-12 flex items-center justify-center text-slate-300 hover:text-red-500 font-black transition-all hover:bg-red-50 rounded-2xl italic flex-shrink-0 border-2 border-transparent hover:border-red-100"
                                     >
-                                        Ignore
+                                        <X size={16}/>
                                     </button>
                                 </div>
                             </motion.div>
@@ -279,8 +288,57 @@ const DashboardHome = ({ stats, currentPos, isOnline, workingStatus, toggleOnlin
                 </AnimatePresence>
             </div>
         </div>
+
+        {/* Job Description Modal */}
+        <AnimatePresence>
+            {selectedJob && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+                    <motion.div initial={{ scale: 0.95, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.95, y: 20 }} className="bg-white rounded-[3rem] p-8 max-w-lg w-full shadow-2xl relative overflow-hidden">
+                        <button onClick={() => setSelectedJob(null)} className="absolute top-6 right-6 w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 transition-colors"><X size={20} /></button>
+                        
+                        <div className="mb-6">
+                            <span className="text-[10px] font-black text-yellow-600 uppercase tracking-widest italic mb-2 block">MISSION DOSSIER</span>
+                            <h2 className="text-3xl font-[1000] italic uppercase tracking-tighter text-slate-900 leading-none mb-4">{selectedJob.service}</h2>
+                            <div className="flex items-center gap-3 py-3 border-y border-slate-100">
+                                <IndianRupee size={16} className="text-slate-400" />
+                                <span className="text-lg font-black italic">EST. PAY: ₹{selectedJob.basePrice}</span>
+                            </div>
+                        </div>
+
+                        <div className="space-y-6 mb-8 max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar">
+                            <div>
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Client Description</h4>
+                                <p className="text-sm border-l-4 border-yellow-400 pl-4 py-2 text-slate-700 bg-slate-50 italic rounded-r-xl">{selectedJob.description || 'No additional details provided by client.'}</p>
+                            </div>
+
+                            {selectedJob.imageUrl && (
+                                <div>
+                                    <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Attached Intel</h4>
+                                    <div className="rounded-2xl overflow-hidden border-2 border-slate-100 shadow-inner">
+                                        <img src={selectedJob.imageUrl} alt="Mission Intel" className="w-full h-auto max-h-48 object-cover" />
+                                    </div>
+                                </div>
+                            )}
+
+                            <div>
+                                <h4 className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">Location Coordinates</h4>
+                                <p className="text-xs font-black text-slate-600">{selectedJob.location?.address || 'Location hidden until accepted'}</p>
+                            </div>
+                        </div>
+
+                        <button
+                            onClick={() => { setSelectedJob(null); handleAcceptMission(selectedJob._id); }}
+                            className="w-full py-5 bg-black text-white rounded-[2rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl hover:scale-[1.02] active:scale-[0.98] transition-all"
+                        >
+                            ACCEPT MISSION
+                        </button>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     </div>
-);
+    );
+};
 
 
 

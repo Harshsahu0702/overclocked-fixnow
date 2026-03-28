@@ -57,7 +57,9 @@ const BookingPage = () => {
     const [viewState, setViewState] = useState('idle'); // idle, results, tracking
     const [isAutoSearch, setIsAutoSearch] = useState(() => !!new URLSearchParams(window.location.search).get('q'));
     const [isProfileOpen, setIsProfileOpen] = useState(false);
-
+    const [imageFile, setImageFile] = useState(null);
+    const [jobDescription, setJobDescription] = useState('');
+    const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     // Use ref to track activeJob for reconnect handler (avoids stale closures)
     const activeJobRef = useRef(activeJob);
 
@@ -66,6 +68,17 @@ const BookingPage = () => {
     const handleProfileUpdate = (updatedUser) => {
         setUser(updatedUser);
         localStorage.setItem('user', JSON.stringify(updatedUser));
+    };
+
+    const handleImageUpload = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setImageFile(reader.result);
+            };
+            reader.readAsDataURL(file);
+        }
     };
 
     useEffect(() => {
@@ -217,6 +230,7 @@ const BookingPage = () => {
                 workers: res.data.workers,
                 estimatedPrice: res.data.estimatedPrice
             });
+            setJobDescription(searchText);
             setViewState('results');
 
             setTimeout(() => {
@@ -233,12 +247,14 @@ const BookingPage = () => {
 
     const handleConfirmBooking = async () => {
         if (!aiResult?.workers || aiResult.workers.length === 0) return alert("Pehle koi Bhaiya milne dijiye!");
+        setIsDetailsModalOpen(false);
         setLoading(true);
         try {
             const res = await axios.post('http://localhost:5000/api/jobs/create', {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
-                description: query,
+                description: jobDescription,
+                imageUrl: imageFile,
                 location: location,
                 price: aiResult.estimatedPrice
             });
@@ -409,7 +425,7 @@ const BookingPage = () => {
                                         </div>
                                     </div>
                                     <button
-                                        onClick={handleConfirmBooking}
+                                        onClick={() => setIsDetailsModalOpen(true)}
                                         disabled={loading || aiResult.workers.length === 0}
                                         className="w-full py-6 bg-black text-white rounded-[2.5rem] border-4 border-black font-black text-2xl uppercase italic shadow-[6px_6px_0_0_#FACC15] hover:shadow-none hover:translate-x-1 hover:translate-y-1 disabled:opacity-30 transition-all"
                                     >
@@ -571,6 +587,47 @@ const BookingPage = () => {
                     )}
                 </div>
             </div>
+
+            <AnimatePresence>
+                {isDetailsModalOpen && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[150] bg-black/50 backdrop-blur-sm flex items-center justify-center p-4">
+                        <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.9, y: 30 }} className="bg-white rounded-[2.5rem] border-4 border-black p-8 max-w-lg w-full shadow-[10px_10px_0_0_#000] relative">
+                            <button onClick={() => setIsDetailsModalOpen(false)} className="absolute top-4 right-4 bg-yellow-400 border-2 border-black p-2 rounded-xl hover:translate-x-1 hover:-translate-y-1 shadow-[4px_4px_0_0_#000] transition-all">
+                                <X size={20} />
+                            </button>
+                            <h2 className="text-3xl font-[1000] uppercase italic tracking-tighter mb-6">Mission Details</h2>
+                            <div className="space-y-6">
+                                <div>
+                                    <label className="block text-sm font-black uppercase italic mb-2">Describe the Problem (Optional)</label>
+                                    <textarea
+                                        value={jobDescription}
+                                        onChange={(e) => setJobDescription(e.target.value)}
+                                        placeholder="Add more details about your issue..."
+                                        rows={3}
+                                        className="w-full p-4 rounded-2xl border-2 border-black font-bold outline-none focus:translate-y-[-2px] focus:shadow-[4px_4px_0_0_#000] transition-all resize-none"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-black uppercase italic mb-2">Upload an Image (Optional)</label>
+                                    <input type="file" accept="image/*" onChange={handleImageUpload} className="w-full text-sm font-bold border-2 border-black rounded-xl p-2 bg-slate-50 mb-2 fill-black" />
+                                    {imageFile && (
+                                        <div className="relative w-full h-40 border-2 border-black rounded-xl overflow-hidden mt-2">
+                                            <img src={imageFile} alt="Preview" className="w-full h-full object-cover" />
+                                            <button onClick={() => setImageFile(null)} className="absolute top-2 right-2 bg-red-500 text-white p-1.5 border-2 border-black rounded-lg"><X size={14}/></button>
+                                        </div>
+                                    )}
+                                </div>
+                                <button
+                                    onClick={handleConfirmBooking}
+                                    className="w-full py-4 bg-emerald-400 text-black border-4 border-black rounded-2xl font-[1000] text-xl uppercase italic shadow-[6px_6px_0_0_#000] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all mt-4"
+                                >
+                                    Confirm Booking
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <AnimatePresence>
                 {loading && (

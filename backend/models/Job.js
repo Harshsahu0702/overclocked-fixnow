@@ -10,6 +10,7 @@ const jobSchema = new mongoose.Schema({
     
     service: { type: String, required: true },
     description: { type: String },
+    imageUrl: { type: String },
     location: {
         type: { type: String, default: 'Point' },
         coordinates: { type: [Number], required: true }, // [lng, lat]

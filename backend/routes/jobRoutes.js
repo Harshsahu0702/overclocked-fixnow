@@ -7,7 +7,7 @@ const PartnerProfile = require('../models/PartnerProfile');
 // 1. Create Job & Dispatch to Nearest
 router.post('/create', async (req, res) => {
     try {
-        const { customerId, serviceType, location, price, description } = req.body;
+        const { customerId, serviceType, location, price, description, imageUrl } = req.body;
         console.log("📝 New Booking (Customer in User, Partner in Profile):", { customerId, serviceType, price });
 
         if (!location || !location.lat || !location.lng) {
@@ -48,6 +48,7 @@ router.post('/create', async (req, res) => {
             partnerIds: targetPartnerIds, 
             service: serviceType || "General Service",
             description,
+            imageUrl,
             location: {
                 type: 'Point',
                 coordinates: [location.lng, location.lat],
