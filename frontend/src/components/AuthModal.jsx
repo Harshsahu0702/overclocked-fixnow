@@ -19,7 +19,7 @@ const AuthModal = ({ isOpen, onClose, role = 'customer' }) => {
 
         setLoading(true);
         try {
-            const url = isSignup ? 'http://10.74.227.253:5000/api/users/register' : 'http://10.74.227.253:5000/api/users/login';
+            const url = isSignup ? 'http://localhost:5000/api/users/register' : 'http://localhost:5000/api/users/login';
             const payload = isSignup ? { name, phone, password, role } : { phone, password };
 
             const res = await axios.post(url, payload);
