@@ -48,7 +48,14 @@ const RecenterMap = ({ coords }) => {
 
 const BookingPage = () => {
     const navigate = useNavigate();
-    const [user] = useState(JSON.parse(localStorage.getItem('user')) || null);
+    const [user] = useState(() => {
+        try {
+            const stored = localStorage.getItem('user');
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            return (parsed.role === 'customer' || parsed.role === 'admin') ? parsed : null;
+        } catch (e) { return null; }
+    });
     const [query, setQuery] = useState(() => new URLSearchParams(window.location.search).get('q') || '');
     const [aiResult, setAiResult] = useState(null);
     const [loading, setLoading] = useState(() => !!new URLSearchParams(window.location.search).get('q'));

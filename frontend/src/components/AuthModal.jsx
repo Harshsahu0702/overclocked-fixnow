@@ -25,22 +25,25 @@ const AuthModal = ({ isOpen, onClose, role = 'customer' }) => {
 
             const res = await axios.post(url, payload);
             if (res.data.success) {
+                const userRole = res.data.user.role;
+
+                // RESTRICTION: This modal is only for customers (and admins)
+                // Partners must use their own specialized portal
+                if (userRole === 'partner') {
+                    alert("Partners cannot log in here. Please use the Partner Portal at the bottom of the page.");
+                    setLoading(false);
+                    return;
+                }
+
                 localStorage.setItem('token', res.data.token);
                 localStorage.setItem('user', JSON.stringify(res.data.user));
                 onClose();
 
-                const userRole = res.data.user.role;
-
-                // If the modal was opened for 'customer' flow, just stay on landing page
-                if (role === 'customer' && userRole !== 'admin') {
-                    // Stay here, landing page will handle the search state
-                } else if (userRole === 'partner') {
-                    navigate('/partner');
-                } else if (userRole === 'admin') {
+                // If admin, navigate to admin dashboard
+                if (userRole === 'admin') {
                     navigate('/admin');
-                } else {
-                    // Default to stay
                 }
+                // Otherwise stay on page (customers)
             }
         } catch (err) {
             alert(err.response?.data?.message || "Auth Error");

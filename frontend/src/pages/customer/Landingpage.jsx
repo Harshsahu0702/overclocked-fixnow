@@ -166,7 +166,11 @@ const Landingpage = ({ onLoginClick }) => {
     const getStoredUser = () => {
         try {
             const stored = localStorage.getItem('user');
-            return stored ? JSON.parse(stored) : null;
+            if (!stored) return null;
+            const parsed = JSON.parse(stored);
+            // ONLY ALLOW CUSTOMERS (OR ADMINS) ON THIS PAGE
+            if (parsed.role === 'partner') return null;
+            return parsed;
         } catch (e) {
             console.error("User Parse Error", e);
             return null;
