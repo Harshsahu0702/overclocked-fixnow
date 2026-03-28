@@ -165,7 +165,7 @@ const AdminDashboard = () => {
                     <h2 className="text-4xl font-[1000] italic text-white flex items-center tracking-tighter">
                         <IndianRupee size={28} /> {(stats?.revenue || 0).toLocaleString()}
                     </h2>
-                    <button 
+                    <button
                         onClick={() => { fetchStats(); fetchAllMissions(); fetchPartners(); }}
                         className="w-full mt-4 py-2 bg-black text-yellow-400 border-2 border-dashed border-yellow-400 rounded-xl text-[10px] font-black uppercase hover:bg-yellow-400 hover:text-black transition-all"
                     >
@@ -267,8 +267,8 @@ const AdminDashboard = () => {
                             {/* Mission Filters */}
                             <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar">
                                 {['ALL', 'CREATED', 'ACCEPTED', 'ON_THE_WAY', 'IN_PROGRESS', 'COMPLETED', 'PAID', 'CANCELLED'].map(s => (
-                                    <button 
-                                        key={s} 
+                                    <button
+                                        key={s}
                                         onClick={() => setFilterStatus(s)}
                                         className={`px-6 py-3 rounded-2xl border-4 border-black font-black uppercase italic text-xs whitespace-nowrap transition-all ${filterStatus === s ? 'bg-black text-yellow-400 shadow-none translate-y-1' : 'bg-white text-black shadow-[4px_4px_0_0_#000] hover:-translate-y-1'}`}
                                     >
@@ -279,8 +279,8 @@ const AdminDashboard = () => {
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
                                 {filteredMissions.map(job => (
-                                    <div 
-                                        key={job._id} 
+                                    <div
+                                        key={job._id}
                                         onClick={() => setSelectedJob(job)}
                                         className="bg-white p-10 rounded-[4rem] border-[6px] border-black shadow-[15px_15px_0_0_#000] cursor-pointer hover:shadow-none hover:translate-x-2 hover:translate-y-2 transition-all relative overflow-hidden"
                                     >

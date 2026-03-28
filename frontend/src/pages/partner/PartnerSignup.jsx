@@ -9,27 +9,27 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
 const ALL_SERVICES = [
-    "AC Installation", "AC Repair", "Aluminium Work", "App Developer", "Babysitter", 
-    "Bathroom Renovation", "Bed Bug Treatment", "Bike Repair", "Borewell & Water Drilling", 
-    "Bridal Makeup", "CA & Tax Filing", "Car AC Repair", "Car Wash", "Carpenter", 
-    "Carpet Cleaning", "CCTV Installation", "Chimney Cleaning", "Cockroach Control", 
-    "Computer Repair", "Cook", "Courier & Delivery", "Dance Teacher", "Deep Cleaning", 
-    "Dietitian", "DJ & Sound System", "Doctor Home Visit", "Door & Window Installation", 
-    "Driver", "DTH & Cable Setup", "Elder Care", "Electrician", "Event Decoration", 
-    "False Ceiling", "Fitness Trainer", "Flower Decoration", "Furniture Repair", 
-    "Garden & Landscaping", "Gas Stove Repair", "Geyser Repair", "Glass Fitting", 
-    "Graphic Designer", "Home Automation", "Home Cleaning", "Home Renovation", 
-    "Interior Designer", "Inverter & Battery Repair", "Jewellery Repair", "Kitchen Cleaning", 
-    "Laptop Repair", "Laundry & Dry Cleaning", "Legal Consultant", "Locksmith", "Maid", 
-    "Mehendi Artist", "Men Salon", "Microwave Repair", "Mobile Repair", "Modular Kitchen Installation", 
-    "Mosquito Control", "Music Teacher", "Nurse Home Care", "Packers & Movers", "Painter", 
-    "Party Makeup", "Pest Control", "Photography", "Physiotherapist", "Plumber", 
-    "Rat Control", "Refrigerator Repair", "RO Water Purifier Service", "Security Guard", 
-    "Shoe Repair", "Sofa Cleaning", "Solar Panel Installation", "Spa & Massage", 
-    "Swimming Pool Maintenance", "Tailor & Alteration", "Tent & Catering", "Termite Control", 
-    "Tile Fitting", "Tree Cutting", "Tutor", "TV Repair", "Type Puncture", "Videography", 
-    "Washing Machine Repair", "Watch Repair", "Water Pump Repair", "Water Tank Cleaning", 
-    "Waterproofing", "Waxing & Threading", "Website Developer", "WiFi & Network Setup", 
+    "AC Installation", "AC Repair", "Aluminium Work", "App Developer", "Babysitter",
+    "Bathroom Renovation", "Bed Bug Treatment", "Bike Repair", "Borewell & Water Drilling",
+    "Bridal Makeup", "CA & Tax Filing", "Car AC Repair", "Car Wash", "Carpenter",
+    "Carpet Cleaning", "CCTV Installation", "Chimney Cleaning", "Cockroach Control",
+    "Computer Repair", "Cook", "Courier & Delivery", "Dance Teacher", "Deep Cleaning",
+    "Dietitian", "DJ & Sound System", "Doctor Home Visit", "Door & Window Installation",
+    "Driver", "DTH & Cable Setup", "Elder Care", "Electrician", "Event Decoration",
+    "False Ceiling", "Fitness Trainer", "Flower Decoration", "Furniture Repair",
+    "Garden & Landscaping", "Gas Stove Repair", "Geyser Repair", "Glass Fitting",
+    "Graphic Designer", "Home Automation", "Home Cleaning", "Home Renovation",
+    "Interior Designer", "Inverter & Battery Repair", "Jewellery Repair", "Kitchen Cleaning",
+    "Laptop Repair", "Laundry & Dry Cleaning", "Legal Consultant", "Locksmith", "Maid",
+    "Mehendi Artist", "Men Salon", "Microwave Repair", "Mobile Repair", "Modular Kitchen Installation",
+    "Mosquito Control", "Music Teacher", "Nurse Home Care", "Packers & Movers", "Painter",
+    "Party Makeup", "Pest Control", "Photography", "Physiotherapist", "Plumber",
+    "Rat Control", "Refrigerator Repair", "RO Water Purifier Service", "Security Guard",
+    "Shoe Repair", "Sofa Cleaning", "Solar Panel Installation", "Spa & Massage",
+    "Swimming Pool Maintenance", "Tailor & Alteration", "Tent & Catering", "Termite Control",
+    "Tile Fitting", "Tree Cutting", "Tutor", "TV Repair", "Type Puncture", "Videography",
+    "Washing Machine Repair", "Watch Repair", "Water Pump Repair", "Water Tank Cleaning",
+    "Waterproofing", "Waxing & Threading", "Website Developer", "WiFi & Network Setup",
     "Women Salon", "Yoga Instructor"
 ];
 
@@ -133,7 +133,7 @@ const PartnerSignup = () => {
         }
 
         try {
-            const res = await axios.post('http://localhost:5000/api/users/register', {
+            const res = await axios.post('http://192.168.121.253:5000/api/users/register', {
                 ...formData,
                 role: 'partner',
                 location: {
@@ -155,7 +155,7 @@ const PartnerSignup = () => {
     const nextStep = () => setStep(s => s + 1);
     const prevStep = () => setStep(s => s - 1);
 
-    const filteredSkills = ALL_SERVICES.filter(s => 
+    const filteredSkills = ALL_SERVICES.filter(s =>
         s.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -251,7 +251,7 @@ const PartnerSignup = () => {
                                     {topSkills.map(skill => (
                                         <button key={skill} onClick={() => toggleSkill(skill)} className={`px-4 py-2 rounded-xl border-2 font-black text-[10px] uppercase transition-all ${formData.skills.includes(skill) ? 'bg-yellow-400 border-yellow-400 text-black shadow-[4px_4px_0_0_#fff]' : 'border-white/5 text-white/20'}`}>{skill}</button>
                                     ))}
-                                    <button 
+                                    <button
                                         onClick={() => setIsModalOpen(true)}
                                         className="px-4 py-2 rounded-xl border-2 border-yellow-400 text-yellow-400 font-black text-[10px] uppercase hover:bg-yellow-400 hover:text-black transition-all bg-yellow-400/10"
                                     >
@@ -294,7 +294,7 @@ const PartnerSignup = () => {
                                 <div className="space-y-3">
                                     <div className="flex justify-between items-center">
                                         <label className="text-[10px] font-black uppercase text-white/30 tracking-widest">Permanent Address</label>
-                                        <button 
+                                        <button
                                             onClick={handleDetectLocation}
                                             className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-yellow-400 hover:text-white transition-all bg-yellow-400/10 px-3 py-1.5 rounded-full border border-yellow-400/20"
                                         >
@@ -377,13 +377,13 @@ const PartnerSignup = () => {
             {/* All Skills Modal */}
             <AnimatePresence>
                 {isModalOpen && (
-                    <motion.div 
+                    <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[1000] bg-black/90 backdrop-blur-xl flex items-center justify-center p-4"
                     >
-                        <motion.div 
+                        <motion.div
                             initial={{ scale: 0.9, y: 20 }}
                             animate={{ scale: 1, y: 0 }}
                             exit={{ scale: 0.9, y: 20 }}
@@ -398,9 +398,9 @@ const PartnerSignup = () => {
                                 </div>
                                 <div className="relative">
                                     <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/20" size={20} />
-                                    <input 
-                                        type="text" 
-                                        placeholder="Search service (e.g. WiFi, CCTV, Cleaning...)" 
+                                    <input
+                                        type="text"
+                                        placeholder="Search service (e.g. WiFi, CCTV, Cleaning...)"
                                         className="w-full pl-12 pr-4 py-4 bg-white/5 border border-white/10 rounded-2xl outline-none focus:border-yellow-400 transition-all font-bold"
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
@@ -411,8 +411,8 @@ const PartnerSignup = () => {
                             <div className="flex-1 overflow-y-auto p-8 custom-scrollbar">
                                 <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
                                     {filteredSkills.map(skill => (
-                                        <button 
-                                            key={skill} 
+                                        <button
+                                            key={skill}
                                             onClick={() => toggleSkill(skill)}
                                             className={`p-3 rounded-xl border font-bold text-[10px] uppercase transition-all text-left flex items-center justify-between ${formData.skills.includes(skill) ? 'bg-yellow-400 border-yellow-400 text-black' : 'bg-white/5 border-white/10 text-white/40 hover:border-yellow-400/50'}`}
                                         >
@@ -431,7 +431,7 @@ const PartnerSignup = () => {
 
                             <div className="p-8 bg-black/50 border-t border-white/10 flex justify-between items-center">
                                 <p className="text-xs font-black uppercase text-white/30 italic">{formData.skills.length} Selected</p>
-                                <button 
+                                <button
                                     onClick={() => setIsModalOpen(false)}
                                     className="px-8 py-3 bg-yellow-400 text-black rounded-xl font-black uppercase italic text-sm border-2 border-black shadow-[4px_4px_0_0_#FFF] active:translate-y-1 active:shadow-none transition-all"
                                 >

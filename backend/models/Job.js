@@ -34,6 +34,11 @@ const jobSchema = new mongoose.Schema({
     rating: { type: Number, min: 1, max: 5 },
     review: String,
     
+    // Payment Details (NEW)
+    paymentMethod: { type: String, enum: ['UPI', 'CASH', 'QR_SCAN', 'PENDING'], default: 'PENDING' },
+    paymentStatus: { type: String, enum: ['UNPAID', 'PENDING', 'PAID'], default: 'UNPAID' },
+    paidToPartner: { type: Boolean, default: false },
+    
     // Tracking Progress Timeline
     statusHistory: [{
         status: { type: String, required: true },

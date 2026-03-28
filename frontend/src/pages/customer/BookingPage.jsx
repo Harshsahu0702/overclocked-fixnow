@@ -57,6 +57,7 @@ const BookingPage = () => {
     const [viewState, setViewState] = useState('idle'); // idle, results, tracking
     const [isAutoSearch, setIsAutoSearch] = useState(() => !!new URLSearchParams(window.location.search).get('q'));
     const [isProfileOpen, setIsProfileOpen] = useState(false);
+    const [awaitingPaymentConfirm, setAwaitingPaymentConfirm] = useState(false);
 
     // Use ref to track activeJob for reconnect handler (avoids stale closures)
     const activeJobRef = useRef(activeJob);
@@ -121,12 +122,28 @@ const BookingPage = () => {
         }
 
         const handleStatusChanged = (payload) => {
-            console.log("📡 Status Changed:", payload);
-            const incomingJobId = (payload.jobId || payload.job?._id)?.toString();
+            console.log("📡 STATUS_CHANGED EVENT RECEIVED:", payload);
+            if (!payload) return;
+
+            const incomingJobId = (payload.jobId || payload.job?._id || payload._id)?.toString();
             const currentJobId = activeJobRef.current?._id?.toString();
 
+            console.log(`🔍 ID Check: Incoming[${incomingJobId}] Target[${currentJobId}] Status[${payload.status}]`);
+
+            // If it's a PAID status, we want to clear the overlay even if ID check is fuzzy
+            if (payload.status === 'PAID' || (payload.job && payload.job.status === 'PAID')) {
+                console.log("💰 Payment confirmed! Clearing overlay...");
+                setAwaitingPaymentConfirm(false);
+                alert("Mission Complete! Bhaiya has confirmed your payment. 🤝");
+
+                setActiveJob(null);
+                setViewState('idle');
+                navigate('/'); // RE-DIRECT TO LANDING PAGE
+                return;
+            }
+
             if (!currentJobId || (incomingJobId && currentJobId !== incomingJobId)) {
-                console.warn("⚠️ Ignoring status update for a different mission:", incomingJobId);
+                console.warn("⚠️ Ignoring status update: ID mismatch.");
                 return;
             }
 
@@ -163,7 +180,7 @@ const BookingPage = () => {
     useEffect(() => {
         if (!activeJob?._id) return;
         socket.emit("join", { role: "job", id: activeJob._id });
-        return () => {};
+        return () => { };
     }, [activeJob?._id]);
 
     useEffect(() => {
@@ -173,19 +190,34 @@ const BookingPage = () => {
     }, [location, query, viewState]);
 
     useEffect(() => {
-        if (!activeJob || ['COMPLETED', 'CANCELLED', 'PAID'].includes(activeJob.status)) return;
+        if (!activeJob || (['CANCELLED', 'PAID'].includes(activeJob.status) && !awaitingPaymentConfirm)) return;
         const interval = setInterval(() => {
             fetchActiveJob();
         }, 3000);
         return () => clearInterval(interval);
-    }, [activeJob?.status]);
+    }, [activeJob?.status, awaitingPaymentConfirm]);
 
     const fetchActiveJob = async () => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=customer`);
+            const res = await axios.get(`http://192.168.121.253:5000/api/jobs/active/${user._id}?role=customer`);
             if (res.data.job) {
                 setActiveJob(res.data.job);
                 setViewState('tracking');
+
+                if (res.data.job.status === 'PAID') {
+                    setAwaitingPaymentConfirm(false);
+                    setActiveJob(null);
+                    setViewState('idle');
+                    navigate('/');
+                }
+            } else if (awaitingPaymentConfirm) {
+                // If the job becomes PAID or CANCELLED, it disappears from the 'active' list.
+                // So if we find it gone, we assume it's completed.
+                setAwaitingPaymentConfirm(false);
+                alert("Mission Synchronized: Payment Confirmed! 🤝");
+                setActiveJob(null);
+                setViewState('idle');
+                navigate('/');
             }
         } catch (err) {
             console.error("Fetch job error:", err);
@@ -205,7 +237,7 @@ const BookingPage = () => {
 
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/ai/interpret', {
+            const res = await axios.post('http://192.168.121.253:5000/api/ai/interpret', {
                 text: searchText,
                 lat: location.lat,
                 lng: location.lng
@@ -235,7 +267,7 @@ const BookingPage = () => {
         if (!aiResult?.workers || aiResult.workers.length === 0) return alert("Pehle koi Bhaiya milne dijiye!");
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/jobs/create', {
+            const res = await axios.post('http://192.168.121.253:5000/api/jobs/create', {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
                 description: query,
@@ -263,7 +295,7 @@ const BookingPage = () => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            await axios.patch(`http://192.168.121.253:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);
@@ -276,23 +308,18 @@ const BookingPage = () => {
         }
     };
 
-    const handleCompletePayment = async () => {
-        setLoading(true);
-        try {
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, {
-                status: 'PAID'
-            });
-            if (res.data.success) {
-                setActiveJob(null);
-                setViewState('idle');
-                setAiResult(null);
-                alert("Payment Successful! Bhaiya is happy. 😊");
-            }
-        } catch (err) {
-            alert("Payment failed: " + (err.response?.data?.message || err.message));
-        } finally {
-            setLoading(false);
-        }
+    const handleCompletePayment = async (method) => {
+        // Emit a request to Bhaiya to confirm he received the money (UPI or Cash)
+        socket.emit('payment_confirmation_request', {
+            jobId: activeJob._id,
+            partnerId: activeJob.partnerId._id || activeJob.partnerId,
+            customerId: user._id,
+            amount: activeJob.finalPrice || activeJob.basePrice,
+            method: method || 'UPI'
+        });
+
+        setAwaitingPaymentConfirm(true);
+        // We will reset this state when we receive 'status_changed' with 'PAID' via socket
     };
 
     return (
@@ -305,7 +332,7 @@ const BookingPage = () => {
                     <span className="text-xl font-[1000] uppercase italic tracking-tighter">FixNow</span>
                 </div>
                 {_user && (
-                    <div 
+                    <div
                         onClick={() => setIsProfileOpen(true)}
                         className="flex items-center gap-2 border-2 border-black px-3 py-1 rounded-full bg-white shadow-[2px_2px_0_0_#000] cursor-pointer hover:translate-x-0.5 hover:translate-y-0.5 hover:shadow-none transition-all"
                     >
@@ -321,38 +348,38 @@ const BookingPage = () => {
                 {viewState === 'idle' && !isAutoSearch && (
                     <section className="relative mb-8">
                         <div className="bg-yellow-400 p-8 md:p-14 rounded-[3.5rem] border-4 border-black shadow-[15px_15px_0_0_#000] overflow-hidden relative transition-all duration-500">
-                        <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 pointer-events-none">
-                            <Wrench size={180} />
-                        </div>
-                        <AnimatePresence mode="wait">
-                            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key='idle'>
-                                <h1 className="text-5xl md:text-8xl font-[1000] uppercase italic tracking-tighter leading-[0.85] mb-8">
-                                    KUCH <span className="text-white drop-shadow-[5px_5px_0_0_#000]">KABADA</span> <br /> HUA HAI?
-                                </h1>
-                            </motion.div>
-                        </AnimatePresence>
-                        <div className="relative group max-w-4xl">
-                            <input
-                                type="text"
-                                value={query}
-                                onChange={(e) => setQuery(e.target.value)}
-                                onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
-                                placeholder="Describe problem (e.g. AC thanda nahi kar raha...)"
-                                className="w-full p-6 md:p-10 rounded-[2.5rem] border-4 border-black text-xl md:text-3xl font-black italic shadow-[8px_8px_0_0_#FFF] outline-none group-focus-within:translate-y-[-4px] group-focus-within:shadow-[12px_12px_0_0_#FFF] transition-all"
-                            />
-                            <button onClick={() => handleAiSearch()} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black text-white p-5 md:p-8 rounded-3xl hover:scale-105 transition-transform shadow-[4px_4px_0_0_#FACC15] active:translate-y-1">
-                                <Search size={32} strokeWidth={4} />
-                            </button>
-                        </div>
-                        <div className="mt-8 flex flex-wrap gap-3">
-                            {['Electrician', 'Plumber', 'AC Repair', 'Cleaning', 'Cook'].map(s => (
-                                <button key={s} onClick={() => handleAiSearch(s)} className="px-6 py-3 bg-white border-2 border-black rounded-2xl font-black uppercase italic text-xs hover:bg-black hover:text-white transition-all shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-y-0">
-                                    {s}
+                            <div className="absolute top-0 right-0 p-12 opacity-10 rotate-12 pointer-events-none">
+                                <Wrench size={180} />
+                            </div>
+                            <AnimatePresence mode="wait">
+                                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} key='idle'>
+                                    <h1 className="text-5xl md:text-8xl font-[1000] uppercase italic tracking-tighter leading-[0.85] mb-8">
+                                        KUCH <span className="text-white drop-shadow-[5px_5px_0_0_#000]">KABADA</span> <br /> HUA HAI?
+                                    </h1>
+                                </motion.div>
+                            </AnimatePresence>
+                            <div className="relative group max-w-4xl">
+                                <input
+                                    type="text"
+                                    value={query}
+                                    onChange={(e) => setQuery(e.target.value)}
+                                    onKeyPress={(e) => e.key === 'Enter' && handleAiSearch()}
+                                    placeholder="Describe problem (e.g. AC thanda nahi kar raha...)"
+                                    className="w-full p-6 md:p-10 rounded-[2.5rem] border-4 border-black text-xl md:text-3xl font-black italic shadow-[8px_8px_0_0_#FFF] outline-none group-focus-within:translate-y-[-4px] group-focus-within:shadow-[12px_12px_0_0_#FFF] transition-all"
+                                />
+                                <button onClick={() => handleAiSearch()} className="absolute right-4 top-1/2 -translate-y-1/2 bg-black text-white p-5 md:p-8 rounded-3xl hover:scale-105 transition-transform shadow-[4px_4px_0_0_#FACC15] active:translate-y-1">
+                                    <Search size={32} strokeWidth={4} />
                                 </button>
-                            ))}
+                            </div>
+                            <div className="mt-8 flex flex-wrap gap-3">
+                                {['Electrician', 'Plumber', 'AC Repair', 'Cleaning', 'Cook'].map(s => (
+                                    <button key={s} onClick={() => handleAiSearch(s)} className="px-6 py-3 bg-white border-2 border-black rounded-2xl font-black uppercase italic text-xs hover:bg-black hover:text-white transition-all shadow-[4px_4px_0_0_#000] hover:translate-y-[-2px] hover:shadow-[6px_6px_0_0_#000] active:translate-y-0">
+                                        {s}
+                                    </button>
+                                ))}
+                            </div>
                         </div>
-                    </div>
-                </section>
+                    </section>
                 )}
 
                 {(viewState !== 'idle' || (isAutoSearch && loading)) && viewState !== 'tracking' && (
@@ -499,7 +526,7 @@ const BookingPage = () => {
                                                                         activeJob.status === 'CANCELLED' ? 'Mission was aborted' : 'Mission Accomplished'
                                                 }
                                             </p>
-                                            
+
                                             {activeJob.otp && !['IN_PROGRESS', 'COMPLETED', 'PAID', 'CANCELLED'].includes(activeJob.status) && (
                                                 <div className="bg-white text-black px-6 py-2 border-4 border-black rounded-2xl font-black text-2xl shadow-[5px_5px_0_0_#FACC15] w-fit">
                                                     PIN: {activeJob.otp}
@@ -526,13 +553,55 @@ const BookingPage = () => {
                                             )}
 
                                             {activeJob.status === 'COMPLETED' && (
-                                                <button
-                                                    onClick={handleCompletePayment}
-                                                    disabled={loading}
-                                                    className="w-full py-8 bg-emerald-500 text-white rounded-[2.5rem] font-black text-4xl uppercase italic tracking-tighter shadow-[10px_10px_0_0_#000] border-4 border-black active:translate-y-2 active:shadow-none transition-all"
-                                                >
-                                                    {loading ? 'Processing...' : 'CONFIRM & PAY'}
-                                                </button>
+                                                <div className="space-y-8 w-full mt-4">
+                                                    <div className="bg-white text-black p-8 rounded-[3.5rem] border-4 border-black shadow-[10px_10px_0_0_#FACC15]">
+                                                        <h3 className="text-3xl font-[1000] uppercase italic mb-6">Pay Directly to Bhaiya</h3>
+
+                                                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                                                            {/* UPI Option */}
+                                                            {activeJob.partnerId?.upiId && (
+                                                                <div className="p-6 bg-slate-50 border-4 border-black rounded-3xl">
+                                                                    <p className="text-[10px] font-black uppercase opacity-40 mb-2">Pay via UPI</p>
+                                                                    <p className="font-black text-xl mb-4 italic truncate">{activeJob.partnerId.upiId}</p>
+                                                                    <a
+                                                                        href={`upi://pay?pa=${activeJob.partnerId.upiId}&pn=${encodeURIComponent(activeJob.partnerId.name)}&am=${activeJob.finalPrice || activeJob.basePrice}&cu=INR`}
+                                                                        className="inline-flex w-full py-4 bg-blue-500 text-white border-2 border-black rounded-2xl font-black text-xs uppercase italic items-center justify-center gap-2 shadow-[4px_4px_0_0_#000] active:translate-y-1 active:shadow-none transition-all"
+                                                                    >
+                                                                        Open UPI App <ArrowRight size={14} />
+                                                                    </a>
+                                                                </div>
+                                                            )}
+
+                                                            {/* QR Option */}
+                                                            {activeJob.partnerId?.qrCodeImage && (
+                                                                <div className="p-6 bg-slate-50 border-4 border-black rounded-3xl flex flex-col items-center">
+                                                                    <p className="text-[10px] font-black uppercase opacity-40 mb-4 text-left w-full">Scan QR Code</p>
+                                                                    <img src={activeJob.partnerId.qrCodeImage} alt="QR Code" className="w-32 h-32 border-4 border-black rounded-2xl shadow-[4px_4px_0_0_#000]" />
+                                                                </div>
+                                                            )}
+                                                        </div>
+
+                                                        {activeJob.partnerId?.acceptsCash && (
+                                                            <div className="mb-8 p-6 bg-emerald-50 border-4 border-black border-dashed rounded-3xl flex items-center gap-4">
+                                                                <div className="text-3xl">💵</div>
+                                                                <div>
+                                                                    <p className="font-black uppercase italic text-sm">Cash Accepted</p>
+                                                                    <p className="text-[9px] font-black opacity-60">You can pay hard cash directly after work.</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+
+                                                        <div className="flex flex-col gap-4">
+                                                            <p className="text-xs font-black uppercase italic opacity-40 text-center">Select Payment Method to Finish</p>
+                                                            <div className="flex flex-wrap gap-4">
+                                                                <button onClick={() => handleCompletePayment('UPI')} className="flex-1 py-5 bg-black text-white rounded-2xl border-2 border-black font-black uppercase italic text-xs shadow-[5px_5px_0_0_#FACC15] active:translate-y-1 active:shadow-none transition-all">I Paid via UPI</button>
+                                                                {activeJob.partnerId?.acceptsCash && (
+                                                                    <button onClick={() => handleCompletePayment('CASH')} className="flex-1 py-5 bg-white text-black rounded-2xl border-2 border-black font-black uppercase italic text-xs shadow-[5px_5px_0_0_#000] active:translate-y-1 active:shadow-none transition-all">I Paid Cash</button>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -586,6 +655,34 @@ const BookingPage = () => {
                                 {viewState === 'tracking' ? 'UPDATING...' : 'AI IS SEARCHING...'}
                             </h2>
                         </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            <AnimatePresence>
+                {awaitingPaymentConfirm && (
+                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[200] bg-black/80 backdrop-blur-xl flex items-center justify-center p-6">
+                        <motion.div initial={{ scale: 0.9, y: 30 }} animate={{ scale: 1, y: 0 }} className="w-full max-w-sm bg-white rounded-[3.5rem] p-10 border-4 border-black shadow-[15px_15px_0_0_#FACC15] text-center">
+                            <div className="w-24 h-24 bg-yellow-400 border-4 border-black rounded-[2.5rem] flex items-center justify-center mx-auto mb-8 text-5xl shadow-[4px_4px_0_0_#000] animate-bounce">⏳</div>
+                            <h3 className="text-3xl font-[1000] uppercase italic tracking-tighter mb-4 leading-none">Awaiting Bhaiya's Confirmation</h3>
+                            <p className="text-slate-400 font-bold text-xs uppercase tracking-widest leading-relaxed mb-10">Bhaiya is currently checking his bank account/cash. Once he confirms, your mission will be officially closed.</p>
+                            <div className="flex flex-col gap-4">
+                                <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
+                                    <motion.div
+                                        animate={{ x: [-200, 200] }}
+                                        transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
+                                        className="w-full h-full bg-black"
+                                    />
+                                </div>
+                                <p className="text-[10px] font-black uppercase text-slate-300 italic tracking-[0.2em] mb-4">Live Synchronization Active</p>
+                                <button
+                                    onClick={() => fetchActiveJob()}
+                                    className="w-full py-4 bg-slate-100 text-black border-2 border-black rounded-2xl font-black text-[10px] uppercase italic tracking-widest shadow-[4px_4px_0_0_#000] active:translate-y-1 active:shadow-none transition-all"
+                                >
+                                    Check Status Manually ↻
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
