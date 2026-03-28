@@ -79,3 +79,8 @@ async def add_process_time_header(request: Request, call_next):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run("app:app", host="0.0.0.0", port=port, reload=True)
+
+
+@app.get("/")
+def root():
+    return {"status": "FixNow AI running"}
