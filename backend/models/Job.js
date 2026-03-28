@@ -46,14 +46,13 @@ const jobSchema = new mongoose.Schema({
 jobSchema.index({ location: '2dsphere' });
 
 // Auto-track Status History
-jobSchema.pre('save', function (next) {
+jobSchema.pre('save', async function () {
     if (this.isModified('status')) {
         this.statusHistory.push({
             status: this.status,
             timestamp: new Date()
         });
     }
-    next();
 });
 
 module.exports = mongoose.model('Job', jobSchema);

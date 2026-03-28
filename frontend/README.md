@@ -1,72 +1,80 @@
 # 🚀 FixNow Frontend - Pro Dashboard & Marketplace
 
-The UI/UX layer of FixNow, designed for speed and clarity. We've built two distinct experiences: a streamlined customer booking flow and a high-performance **"MissionControl"** dashboard for partners.
+Welcome to the frontend of **FixNow**, an AI-powered marketplace connecting users with local service professionals ("Bhaiyas"). This frontend is designed for high-speed interactions, real-time tracking, and a premium "Tactical HUD" experience for partners.
 
----
-
-## 🛠️ Tech Stack & Styling
-
+## 🛠️ Tech Stack
 - **Framework**: React.js (Vite)
-- **Styling**: Tailwind CSS + Framer Motion (for premium animations)
-- **Icons**: Lucide React (Tactical look and feel)
-- **State**: React Hooks (Global/Context state for Auth & Sockets)
-- **API Handling**: Axios (with centralized interceptors & error mapping)
+- **Styling**: Tailwind CSS + Framer Motion (for smooth micro-animations)
+- **Icons**: Lucide React
+- **Real-time**: Socket.io-client
+- **API Handling**: Axios (with centralized interceptors)
+- **State Management**: React Hooks (useState, useEffect)
 
 ---
 
 ## 📂 Project Structure
-
 ```text
 src/
-├── components/          # Reusable UI components (Auth, Profile, UI Kit)
-├── context/             # AppContext for User, Auth & Global State
-├── pages/               # High-level route components
-│   ├── customer/        # LandingPage & BookingPage (The search loop)
-│   ├── partner/         # PartnerSignup & PartnerDashboard (MissionControl)
-│   └── admin/           # AdminDashboard (Verification system)
-├── services/            # Bridge to the outer world
-│   ├── api.js           # Axios instance (Centralized API keys/tokens)
-│   └── socket.js        # Singleton socket.io-client instance
-└── utils/               # Map calculations & distance helpers
+├── components/          # Reusable UI components (AuthModal, ProfileSection)
+├── context/             # Global state (if applicable)
+├── pages/               # Main route components
+│   ├── customer/        # LandingPage, BookingPage (Search & Results)
+│   ├── partner/         # PartnerSignup, PartnerDashboard (The "MissionControl")
+│   └── admin/           # AdminDashboard (Verification & Job Monitoring)
+├── services/            # API & Socket initialization
+│   ├── api.js           # Axios instance with JWT interceptors
+│   └── socket.js        # Socket.io connection logic
+├── utils/               # Helper functions
+└── App.jsx              # Main router and app entry
 ```
 
 ---
 
-## 🏗️ The "MissionControl" HUD (Partner UI)
+## 🌊 Core Workflows
 
-Partners don't just "see" jobs; they manage missions. The latest HUD features:
-- **Interactive Job Feed**: Accept or decline missions with real-time feedback.
-- **Dynamic Skill Filtering**: Partners only see jobs matching their specialized skills.
-- **Live Dispatch Stepper**: Visual tracking of a job's progress (Accept ➔ Start Work ➔ Complete).
-- **Tactical Dark Theme**: Optimized for outdoor visibility and reduced battery usage.
+### 1. Customer Search & Booking
+- **Entry**: `Landingpage.jsx` captures the user's need (e.g., "Mera AC repair kar do").
+- **AI Interpretation**: Query is sent to `/api/ai/interpret`.
+- **Finding Workers**: `BookingPage.jsx` receives the service category and searches for nearby partners via `/api/users/search-partners`.
+- **Booking**: User clicks "Book Now", triggering a socket event `request_bhaiya` to notify all matching partners.
+
+### 2. Partner "Mission Control"
+- **Onboarding**: `PartnerSignup.jsx` handles document uploads (Selfie, Aadhaar).
+- **HUD Interface**: `PartnerDashboard.jsx` provides a real-time feed of jobs.
+- **Location Tracking**: Uses browser Geolocation API to emit `update_location` via sockets, allowing customers to track them live.
+
+### 3. Real-time Status Stepper
+- Jobs move through: `Pending` ➔ `Accepted` ➔ `In Progress` ➔ `Completed`.
+- Every transition is synced across the customer, partner, and admin via socket events.
 
 ---
 
-## 🌊 Latest Frontend Features
+## 📡 API Calling & Socket Integration
 
-1.  **🔍 Searchable Skills Modal**: In the partner signup flow, choose from 20+ specialized service categories with a live search filter.
-2.  **🛰️ Real-time Geolocation Integration**: Partners emit their live GPS coordinates to the server, which can be tracked by customers.
-3.  **💬 Context-Aware Auth**: Automatic redirection based on user role (`Customer`, `Partner`, or `Admin`).
-4.  **⚡ Instant Updates**: Using Socket.io listeners to update job states without page refreshes.
-
----
-
-## 📡 API & Socket Usage
-
-### ⚙️ API Centralization (`src/services/api.js`)
-We use a global Axios instance that simplifies complex backend calls:
+### API Service (`src/services/api.js`)
+All requests use a centralized Axios instance. It automatically attaches the `Bearer <token>` from localStorage to every request.
 ```javascript
 import api from './services/api';
-const response = await api.get('/users/profile'); // JWT added automatically
+const response = await api.get('/users/profile');
 ```
 
-### ⚡ Socket Synchronization (`src/services/socket.js`)
-A single socket connection is used throughout the app lifecycle, joining specialized rooms for role-based notifications.
+### Socket Service (`src/services/socket.js`)
+We use a singleton socket instance to maintain a single connection throughout the app.
+- **Room Joining**: On login, users join a room named `{role}_{id}` (e.g., `partner_65f...`).
+- **Global Broadcasts**: Partners join an `all_partners` room for new job notifications.
 
 ---
 
-## 🚀 Setup Instructions
+## 📑 Page Indexing (Routing)
+- `/` : **Landing Page** (Service search)
+- `/booking` : **Search Results & Tracking**
+- `/partner/signup` : **Partner Registration**
+- `/partner` : **Partner Dashboard**
+- `/admin` : **Admin Command Center**
 
-1.  `cd frontend`
-2.  `npm install`
-3.  `npm run dev` (Runs on `http://localhost:5173`)
+---
+
+## 🚀 Getting Started
+1. `npm install`
+2. Configure `.env` with backend URL.
+3. `npm run dev`

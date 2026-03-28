@@ -81,14 +81,13 @@ SERVICE_KEYWORDS = {
     "RO Water Purifier Service": ["ro", "ro kharab", "ro se pani nahi aata", "water purifier", "purifier kharab", "filter change", "membrane change", "ro service", "pani saf nahi", "pani ka taste kharab"],
     "Geyser Repair": ["geyser", "geyser kharab", "garam pani nahi aata", "hot water nahi", "heater kharab", "water heater", "geyser leak", "geyser trip"],
     "Inverter & Battery Repair": ["inverter", "inverter kharab", "battery khatam", "backup nahi deta", "ups kharab", "power cut pe nahi chalta", "battery swap", "battery replace"],
-    "Carpenter": ["door", "darwaja", "darwaja kharab", "lakdi", "wood", "lakdi ka kaam", "furniture", "furniture banana", "furniture repair", "table", "chair", "bed", "almirah", "door lock", "carpenter", "mistri", "badhai", "handle", "kundi", "chaukhat"],
-    "Furniture Repair": ["sofa tuta", "sofa repair", "sofa spring", "chair tuti", "chair repair", "bed repair", "furniture fix", "foam change", "polish", "gaddi"],
-    "Modular Kitchen Installation": ["kitchen", "modular kitchen", "kitchen banana", "kitchen fitting", "kitchen platform", "countertop", "chimney fitting", "hob fitting", "basket", "trolley"],
-    "Door & Window Installation": ["door", "darwaja", "naya darwaja", "door lagana", "new door", "window lagana", "khidki", "upvc door", "sliding door", "door frame", "net", "jali"],
-    "Glass Fitting": ["glass", "sheesha tuta", "mirror", "mirror fitting", "window glass tuta", "glass lagana", "glass crack", "glass door", "glass partition"],
-    "Aluminium Work": ["aluminium", "aluminium door", "aluminium window", "aluminium partition", "sliding window aluminium", "section work"],
-    "Welder & Fabricator": ["gate", "welding", "weld karna", "iron gate", "gate banana", "grill banana", "railing", "iron work", "metal fabrication", "loha", "lohe ka kaam"],
-
+    "Carpenter": ["darwaja", "darwaja kharab", "lakdi", "wood", "lakdi ka kaam", "furniture", "furniture banana", "furniture repair", "table", "chair", "bed", "almirah", "door lock", "carpenter", "mistri", "badhai"],
+    "Furniture Repair": ["sofa tuta", "sofa repair", "sofa spring", "chair tuti", "chair repair", "bed repair", "furniture fix", "foam change"],
+    "Modular Kitchen Installation": ["kitchen", "modular kitchen", "kitchen banana", "kitchen fitting", "kitchen platform", "countertop", "chimney fitting", "hob fitting"],
+    "Door & Window Installation": ["naya darwaja", "door lagana", "new door", "window lagana", "khidki", "upvc door", "sliding door", "door frame"],
+    "Glass Fitting": ["glass", "sheesha tuta", "mirror", "mirror fitting", "window glass tuta", "glass lagana", "glass crack", "glass door"],
+    "Aluminium Work": ["aluminium", "aluminium door", "aluminium window", "aluminium partition", "sliding window aluminium"],
+    "Welder & Fabricator": ["welding", "weld karna", "iron gate", "gate banana", "grill banana", "railing", "iron work", "metal fabrication"],
     "Painter": ["paint", "rang", "paint karna", "wall paint", "ghar paint karna", "painting", "whitewash", "safedi", "putty", "texture", "varnish", "painter"],
     "Waterproofing": ["seelan", "seepage", "leakage", "chhat se pani", "roof leak", "wall me pani", "damp wall", "waterproof", "waterproofing"],
     "False Ceiling": ["false ceiling", "pop ceiling", "gypsum ceiling", "ceiling design", "ceiling work", "pop work"],
@@ -210,10 +209,8 @@ def classify_service(text):
         return rule_results
 
     # Step 2: HuggingFace Fallback / Enhancement
-    token = os.getenv("HF_TOKEN")
-    if not token:
+    if not HF_TOKEN:
         return rule_results if rule_results else [{"error": "No service detected and tokens missing"}]
-
 
     payload = {
         "inputs": text,
@@ -223,9 +220,8 @@ def classify_service(text):
     }
 
     try:
-        response = requests.post(API_URL, headers={"Authorization": f"Bearer {token}"}, json=payload, timeout=10)
+        response = requests.post(API_URL, headers={"Authorization": f"Bearer {HF_TOKEN}"}, json=payload, timeout=10)
         data = response.json()
-
 
         if isinstance(data, list): data = data[0]
 

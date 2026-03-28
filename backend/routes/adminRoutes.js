@@ -1,45 +1,134 @@
 const express = require('express');
 const router = express.Router();
-const adminController = require('../controllers/adminController');
+const User = require('../models/User');
+const PartnerProfile = require('../models/PartnerProfile');
+const Job = require('../models/Job');
+const { sendApprovalMail } = require('../utils/mailer');
 
-// @route   GET /api/admin/partners
-// @desc    Get all partner applications
-// @access  Private (Admin)
-router.get('/partners', adminController.getAllPartners);
+// 1. Get all partner applications (PROFILES ONLY)
+router.get('/partners', async (req, res) => {
+    try {
+        const partners = await PartnerProfile.find()
+            .select('name phone selfie email skills status isOnline createdAt');
+        res.json({ success: true, partners });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-// @route   GET /api/admin/partner/:id
-// @desc    Get detailed info of a single partner
-// @access  Private (Admin)
-router.get('/partner/:id', adminController.getPartnerById);
+// 2. Get single partner detail
+router.get('/partner/:id', async (req, res) => {
+    try {
+        const partner = await PartnerProfile.findById(req.params.id);
+        if (!partner) return res.status(404).json({ success: false, message: "Partner not found" });
+        res.json({ success: true, partner });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-// @route   POST /api/admin/verify-partner
-// @desc    Approve or reject a partner application
-// @access  Private (Admin)
-router.post('/verify-partner', adminController.verifyPartner);
+// 3. Approve/Reject partner
+router.post('/verify-partner', async (req, res) => {
+    try {
+        const { profileId, status } = req.body;
 
-// @route   GET /api/admin/online-workers
-// @desc    Get map view of all online workers
-// @access  Private (Admin)
-router.get('/online-workers', adminController.getOnlineWorkers);
+        const profile = await PartnerProfile.findById(profileId);
+        if (!profile) return res.status(404).json({ success: false, message: "Profile not found" });
 
-// @route   POST /api/admin/force-offline
-// @desc    Force a partner offline manually
-// @access  Private (Admin)
-router.post('/force-offline', adminController.forceOffline);
+        console.log(`🛠️ Admin Verification: ${profileId} -> ${status}`);
+        profile.status = status;
+        await profile.save();
 
-// @route   GET /api/admin/active-jobs
-// @desc    Monitor all ongoing jobs
-// @access  Private (Admin)
-router.get('/active-jobs', adminController.getActiveJobs);
+        if (status === 'APPROVED' && profile.email) {
+            console.log(`📧 Sending approval mail to: ${profile.email}`);
+            await sendApprovalMail(
+                profile.email, 
+                profile.name, 
+                profile.phone, 
+                profile.originalPassword || "Your signup password"
+            );
+        }
+        
+        res.json({ success: true, profile });
+    } catch (error) {
+        console.error("Verification Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-// @route   GET /api/admin/all-missions
-// @desc    Full mission history/ledger
-// @access  Private (Admin)
-router.get('/all-missions', adminController.getAllMissions);
+// 4. Get online workers for map (PRO Only)
+router.get('/online-workers', async (req, res) => {
+    try {
+        const workers = await PartnerProfile.find({ isOnline: true }).select('name phone location status');
+        res.json({ success: true, workers });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
-// @route   GET /api/admin/platform-stats
-// @desc    Overall dashboard performance stats
-// @access  Private (Admin)
-router.get('/platform-stats', adminController.getPlatformStats);
+// 5. Force Offline
+router.post('/force-offline', async (req, res) => {
+    try {
+        const { userId } = req.body; // In this system, userId refers to the Profile ID for partners
+        await PartnerProfile.findByIdAndUpdate(userId, { isOnline: false, workingStatus: 'OFFLINE' });
+        res.json({ success: true });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 6. Get all Active Jobs (Ongoing)
+router.get('/active-jobs', async (req, res) => {
+    try {
+        const jobs = await Job.find({ status: { $nin: ['PAID', 'CANCELLED', 'COMPLETED'] } })
+            .populate('customerId')
+            .populate({ path: 'partnerId', model: 'PartnerProfile' })
+            .sort({ createdAt: -1 });
+        
+        res.json({ success: true, jobs });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 7. Get ALL Missions (History & Ongoing)
+router.get('/all-missions', async (req, res) => {
+    try {
+        const jobs = await Job.find()
+            .populate('customerId')
+            .populate({ path: 'partnerId', model: 'PartnerProfile' })
+            .sort({ createdAt: -1 });
+        res.json({ success: true, jobs });
+    } catch (error) {
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
+
+// 8. Platform Overview Stats
+router.get('/platform-stats', async (req, res) => {
+    try {
+        const jobs = await Job.find({ status: { $in: ['COMPLETED', 'PAID'] } });
+        const revenue = jobs.reduce((sum, j) => sum + (j.finalPrice || j.basePrice || 0), 0);
+        
+        const totalPartners = await PartnerProfile.countDocuments();
+        const activePartners = await PartnerProfile.countDocuments({ isOnline: true });
+        const totalCustomers = await User.countDocuments({ role: 'customer' });
+        const totalMissions = await Job.countDocuments();
+
+        console.log("📊 Admin Stats Fetch:", { revenue, totalMissions, totalPartners, totalCustomers });
+        
+        res.json({
+            success: true,
+            revenue,
+            totalMissions,
+            totalPartners,
+            activePartners,
+            totalCustomers
+        });
+    } catch (error) {
+        console.error("❌ Stats Fetch Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 module.exports = router;

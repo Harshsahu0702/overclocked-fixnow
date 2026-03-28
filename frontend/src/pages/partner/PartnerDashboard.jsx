@@ -855,6 +855,11 @@ const PartnerDashboard = () => {
         });
 
 
+        socket.on('job_taken', ({ jobId }) => {
+            console.log("🚫 Job taken by another Bhaiya:", jobId);
+            setNewRequests(prev => prev.filter(r => r._id !== jobId));
+        });
+
         fetchDashboard();
 
         return () => {
@@ -862,6 +867,7 @@ const PartnerDashboard = () => {
             socket.off('new_job_request');
             socket.off('offer_accepted');
             socket.off('status_changed');
+            socket.off('job_taken');
             if (gpsInterval.current) clearInterval(gpsInterval.current);
         };
     }, [user, fetchDashboard]);
@@ -986,10 +992,13 @@ const PartnerDashboard = () => {
             } else {
                 setActiveJob(null);
                 fetchDashboard();
+                alert(res.data.message || "Failed to accept mission");
             }
         } catch (err) {
             console.error("Accept Error:", err);
+            setActiveJob(null);
             fetchDashboard();
+            alert(err.response?.data?.message || "Failed to accept mission");
         }
     };
 

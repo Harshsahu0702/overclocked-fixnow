@@ -48,32 +48,4 @@ const sendApprovalMail = async (email, name, phone, password) => {
     }
 };
 
-const sendWelcomeMail = async (email, name) => {
-    const mailOptions = {
-        from: '"FixNow Network" <harshsahu10072006@gmail.com>',
-        to: email,
-        subject: '🚀 FixNow Partner Application Received!',
-        html: `
-            <div style="font-family: Arial, sans-serif; border: 10px solid #FACC15; padding: 40px; border-radius: 20px;">
-                <h1 style="color: #000; text-transform: uppercase; font-style: italic;">Welcome to the Clan, ${name}!</h1>
-                <p style="font-size: 18px; color: #333;">We have successfully received your <b>Partner Application</b> for the FixNow Network.</p>
-                <div style="background: #000; color: #FACC15; padding: 20px; border-radius: 10px; margin: 20px 0;">
-                    <p style="margin: 0; font-weight: bold; font-size: 20px;">STATUS: UNDER REVIEW 🔍</p>
-                </div>
-                <p style="color: #666;">Our verification team is currently reviewing your Aadhaar and Selfie documents. This usually takes 2-4 hours during business days.</p>
-                <p style="font-size: 14px; color: #999;">If this wasn't you, please ignore this email or contact support.</p>
-                <hr style="border: 1px solid #eee;">
-                <p style="font-weight: bold; text-align: center;">FixNow Technologies - Redefining Local Services</p>
-            </div>
-        `
-    };
-    try {
-        await transporter.sendMail(mailOptions);
-        console.log(`📧 Email sent successfully to ${email}`);
-    } catch (err) {
-        console.error("📧 Email Error:", err.message);
-    }
-};
-
-module.exports = { sendApprovalMail, sendWelcomeMail, transporter };
-
+module.exports = { sendApprovalMail, transporter };

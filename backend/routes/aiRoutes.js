@@ -1,10 +1,90 @@
 const express = require("express");
 const router = express.Router();
-const aiController = require("../controllers/aiController");
+const axios = require("axios");
+const PartnerProfile = require("../models/PartnerProfile");
 
-// @route   POST /api/ai/interpret
-// @desc    Process customer request text to identify service, price, and nearby workers
-// @access  Public
-router.post("/interpret", aiController.interpretService);
+const PYTHON_AI_URL = "http://localhost:8000/detect-service";
+
+router.post("/interpret", async (req, res) => {
+    try {
+        const { text, lat, lng } = req.body;
+        if (!text) return res.status(400).json({ success: false, message: "Text is required" });
+
+        console.log(`🤖 AI Interpretation Request: "${text}"`);
+        
+        let detectedService = null;
+        let confidence = 0;
+        let detectionMethod = "python-ai";
+        let aiUsed = true;
+        let allMatches = [];
+
+        try {
+            // STEP 1: Call the new Python Hybrid AI Service (The Single Source of Truth)
+            const pyRes = await axios.post(PYTHON_AI_URL, { text }, { timeout: 6000 });
+            
+            if (pyRes.data && pyRes.data.length > 0 && !pyRes.data[0].error) {
+                allMatches = pyRes.data;
+                const best = allMatches[0];
+                detectedService = best.service;
+                
+                // Normalize confidence to 0-1 (Python returns ~95, Frontend expects ~0.95)
+                confidence = best.confidence > 1 ? best.confidence / 100 : best.confidence;
+                detectionMethod = best.source || "python-hybrid-ai";
+                aiUsed = !detectionMethod.toLowerCase().includes("keyword");
+                
+                console.log(`🐍 Python AI Success: ${detectedService} (${Math.round(confidence * 100)}%)`);
+            }
+        } catch (pyErr) {
+            console.error("❌ Python AI Service Down:", pyErr.message);
+            return res.status(503).json({ 
+                success: false, 
+                message: "AI Service temporarily unavailable. Please try again in a moment." 
+            });
+        }
+
+        if (!detectedService) {
+            return res.status(404).json({ 
+                success: false, 
+                message: "Hum samajh nahi paye ki aapko kaunsi service chahiye. Kripya thoda vistaar mein batayein." 
+            });
+        }
+
+        // --- PARTNER SEARCH LOGIC ---
+        // Find approved, online, and available workers near the customer (7km radius)
+        const workers = await PartnerProfile.find({
+            status: 'APPROVED',
+            isOnline: true,
+            workingStatus: 'AVAILABLE',
+            location: {
+                $near: {
+                    $geometry: { type: "Point", coordinates: [lng, lat] },
+                    $maxDistance: 7000 
+                }
+            }
+        }).select('name phone location rating skills isOnline workingStatus');
+
+        // Return all nearby workers as requested ("list all bhiyas there")
+        const matchedWorkers = workers;
+
+        // Use price directly from Python model
+        const estimatedPrice = (allMatches.length > 0 && allMatches[0].price) ? allMatches[0].price : 300;
+
+        res.json({
+            success: true,
+            service: detectedService,
+            confidence: confidence,
+            aiUsed: aiUsed,
+            detectionMethod: detectionMethod,
+            workers: matchedWorkers,
+            estimatedPrice: estimatedPrice,
+            allMatches: allMatches, 
+            source: detectionMethod
+        });
+
+    } catch (error) {
+        console.error("Interpret Error:", error);
+        res.status(500).json({ success: false, message: error.message });
+    }
+});
 
 module.exports = router;
