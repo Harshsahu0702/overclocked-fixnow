@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import { API_BASE } from '../../config';
 
 const ALL_SERVICES = [
     "AC Installation", "AC Repair", "Aluminium Work", "App Developer", "Babysitter",
@@ -133,7 +134,7 @@ const PartnerSignup = () => {
         }
 
         try {
-            const res = await axios.post('http://localhost:5000/api/users/register', {
+            const res = await axios.post(`${API_BASE}/api/users/register`, {
                 ...formData,
                 role: 'partner',
                 location: {

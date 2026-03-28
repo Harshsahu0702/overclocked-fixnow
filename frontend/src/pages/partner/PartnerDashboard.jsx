@@ -8,6 +8,7 @@ import {
     Calendar, History, Navigation2, X, Info, Loader2, Play, CircleDot
 } from 'lucide-react';
 import { socket } from '../../socket';
+import { API_BASE } from '../../config';
 import { motion, AnimatePresence } from 'framer-motion';
 import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Circle, Polyline, useMap, Tooltip } from 'react-leaflet';
@@ -173,7 +174,7 @@ const CompleteProfileScreen = ({ user, onComplete }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/partners/complete-profile', formData, {
+            const res = await axios.post(`${API_BASE}/api/partners/complete-profile`, formData, {
                 headers: { Authorization: `Bearer ${token}` }
             });
             if (res.data.success) {
@@ -657,7 +658,7 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                             onClick={async () => {
                                 if (!confirm('ABORT MISSION?')) return;
                                 try {
-                                    const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+                                    const res = await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
                                     if (res.data.success) {
                                         socket.emit('job_status_update', {
                                             jobId: activeJob._id,
@@ -695,7 +696,7 @@ const HistoryView = ({ user, stats }) => {
         const fetchLedger = async () => {
             try {
                 const token = localStorage.getItem('token');
-                const res = await axios.get(`http://localhost:5000/api/partners/ledger/${user._id}`, {
+                const res = await axios.get(`${API_BASE}/api/partners/ledger/${user._id}`, {
                     headers: { Authorization: `Bearer ${token}` }
                 });
                 if (res.data.success) setLedger(res.data.jobs);
@@ -786,7 +787,7 @@ const ProfileView = ({ user, stats, fetchDashboard }) => {
         setLoading(true);
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/partners/complete-profile', {
+            const res = await axios.post(`${API_BASE}/api/partners/complete-profile`, {
                 ...formData,
                 skills: formData.skills.split(',').map(s => s.trim()).filter(s => s)
             }, {
@@ -1045,6 +1046,7 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
 // MAIN PARTNER DASHBOARD COMPONENT
 // ---------------------------------------------------------
 
+// API_BASE is now imported from config.js
 const PartnerDashboard = () => {
     // 1. STATE MANAGEMENT
     const [user, setUser] = useState(() => {
@@ -1093,11 +1095,11 @@ const PartnerDashboard = () => {
         if (!user?._id) return;
         try {
             // STEP 1: Check Mission Health FIRST (Triggers self-healing if needed)
-            const jobRes = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=partner`);
+            const jobRes = await axios.get(`${API_BASE}/api/jobs/active/${user._id}?role=partner`);
 
             // STEP 2: Fetch Stats (Gets the updated status after potential healing)
             const token = localStorage.getItem('token');
-            const res = await axios.get(`http://localhost:5000/api/partners/stats/${user._id}`, {
+            const res = await axios.get(`${API_BASE}/api/partners/stats/${user._id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             });
 
@@ -1302,7 +1304,7 @@ const PartnerDashboard = () => {
         setError('');
         try {
             // Using a dedicated partner login route for PRO dashboard
-            const res = await axios.post('http://localhost:5000/api/partners/login', loginData);
+            const res = await axios.post(`${API_BASE}/api/partners/login`, loginData);
             if (res.data.success) {
                 const { token, user } = res.data;
                 localStorage.setItem('token', token);
@@ -1327,7 +1329,7 @@ const PartnerDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.post('http://localhost:5000/api/partners/toggle-status', {
+            const res = await axios.post(`${API_BASE}/api/partners/toggle-status`, {
                 userId: user._id,
                 isOnline: newState
             }, {
@@ -1352,7 +1354,7 @@ const PartnerDashboard = () => {
     const handleRejectMission = async (jobId) => {
         setNewRequests(prev => prev.filter(r => r._id !== jobId));
         try {
-            await axios.post(`http://localhost:5000/api/jobs/${jobId}/reject`, {
+            await axios.post(`${API_BASE}/api/jobs/${jobId}/reject`, {
                 partnerId: user._id
             });
         } catch (err) {
@@ -1370,7 +1372,7 @@ const PartnerDashboard = () => {
             setActiveJob({ ...jobToAccept, status: 'ACCEPTED' });
 
             const token = localStorage.getItem('token');
-            const res = await axios.post(`http://localhost:5000/api/jobs/${jobId}/accept`, {
+            const res = await axios.post(`${API_BASE}/api/jobs/${jobId}/accept`, {
                 partnerId: user._id
             }, {
                 headers: { Authorization: `Bearer ${token}` }
@@ -1400,7 +1402,7 @@ const PartnerDashboard = () => {
 
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, {
+            const res = await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, {
                 status,
                 otp: status === 'IN_PROGRESS' ? otpInput : undefined
             }, {
@@ -1433,7 +1435,7 @@ const PartnerDashboard = () => {
         if (!paymentRequest) return;
         try {
             const token = localStorage.getItem('token');
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${paymentRequest.jobId}/status`, {
+            const res = await axios.patch(`${API_BASE}/api/jobs/${paymentRequest.jobId}/status`, {
                 status: 'PAID',
                 paymentMethod: paymentRequest.method || 'UPI'
             }, {

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, User, Briefcase, Settings, LogOut, Check, Edit2, Phone, Mail, Clock, MapPin, Star } from 'lucide-react';
 import axios from 'axios';
+import { API_BASE } from '../config';
 
 const ProfileSection = ({ user, onClose, onUpdate }) => {
     const [activeTab, setActiveTab] = useState('history');
@@ -21,7 +22,7 @@ const ProfileSection = ({ user, onClose, onUpdate }) => {
     const fetchHistory = async () => {
         if (!user?._id) return;
         try {
-            const res = await axios.get(`http://localhost:5000/api/jobs/history/${user._id}?role=${user.role || 'customer'}`);
+            const res = await axios.get(`${API_BASE}/api/jobs/history/${user._id}?role=${user.role || 'customer'}`);
             if (res.data.success) {
                 setHistory(res.data.jobs);
             }
@@ -34,7 +35,7 @@ const ProfileSection = ({ user, onClose, onUpdate }) => {
 
     const handleUpdate = async () => {
         try {
-            const res = await axios.patch(`http://localhost:5000/api/users/${user._id}`, {
+            const res = await axios.patch(`${API_BASE}/api/users/${user._id}`, {
                 ...formData,
                 role: user.role
             });

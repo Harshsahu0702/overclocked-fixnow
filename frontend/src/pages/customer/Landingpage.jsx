@@ -32,6 +32,7 @@ import axios from 'axios';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { API_BASE } from '../../config';
 
 // Fix Leaflet marker icons
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -158,6 +159,7 @@ const LiveOpsFeed = ({ mode = 'normal' }) => {
     );
 };
 
+
 // Main Landing Page Component
 const Landingpage = ({ onLoginClick }) => {
     // ----------------- BOOKING LOGIC STATES -----------------
@@ -281,7 +283,7 @@ const Landingpage = ({ onLoginClick }) => {
     useEffect(() => {
         const fetchExpertCount = async () => {
             try {
-                const res = await axios.get('http://localhost:5000/api/partners/available-count');
+                const res = await axios.get(`${API_BASE}/api/partners/available-count`);
                 if (res.data.success) {
                     setLiveExpertCount(res.data.count);
                 }
@@ -306,7 +308,7 @@ const Landingpage = ({ onLoginClick }) => {
     const fetchActiveJob = async () => {
         if (!user) return;
         try {
-            const res = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=customer`);
+            const res = await axios.get(`${API_BASE}/api/jobs/active/${user._id}?role=customer`);
             if (res.data.job) {
                 setActiveJob(res.data.job);
                 setViewState('tracking');
@@ -334,7 +336,7 @@ const Landingpage = ({ onLoginClick }) => {
         if (!selectedWorker) return alert("Pehle ek Bhaiya select karo!");
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/jobs/create', {
+            const res = await axios.post(`${API_BASE}/api/jobs/create`, {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
                 description: searchQuery,
@@ -356,7 +358,7 @@ const Landingpage = ({ onLoginClick }) => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);
@@ -369,7 +371,7 @@ const Landingpage = ({ onLoginClick }) => {
     const handleCompletePayment = async () => {
         setLoading(true);
         try {
-            const res = await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'PAID' });
+            const res = await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'PAID' });
             if (res.data.success) {
                 setActiveJob(null);
                 setViewState('idle');

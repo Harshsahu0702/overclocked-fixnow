@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { MapPin, Search, Wrench, Clock, ShieldCheck, Map as MapIcon, Star, ArrowRight, X, AlertTriangle, IndianRupee, Utensils, Zap, Filter, ArrowLeft } from 'lucide-react';
 import { socket } from '../../socket';
 import axios from 'axios';
+import { API_BASE } from '../../config';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -213,7 +214,7 @@ const BookingPage = () => {
 
     const fetchActiveJob = async () => {
         try {
-            const res = await axios.get(`http://localhost:5000/api/jobs/active/${user._id}?role=customer`);
+            const res = await axios.get(`${API_BASE}/api/jobs/active/${user._id}?role=customer`);
             if (res.data.job) {
                 setActiveJob(res.data.job);
                 setViewState('tracking');
@@ -251,7 +252,7 @@ const BookingPage = () => {
 
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/ai/interpret', {
+            const res = await axios.post(`${API_BASE}/api/ai/interpret`, {
                 text: searchText,
                 lat: location.lat,
                 lng: location.lng
@@ -283,7 +284,7 @@ const BookingPage = () => {
         setIsDetailsModalOpen(false);
         setLoading(true);
         try {
-            const res = await axios.post('http://localhost:5000/api/jobs/create', {
+            const res = await axios.post(`${API_BASE}/api/jobs/create`, {
                 customerId: user._id,
                 serviceType: aiResult.serviceType,
                 description: jobDescription,
@@ -312,7 +313,7 @@ const BookingPage = () => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`http://localhost:5000/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);

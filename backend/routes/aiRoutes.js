@@ -3,7 +3,7 @@ const router = express.Router();
 const axios = require("axios");
 const PartnerProfile = require("../models/PartnerProfile");
 
-const PYTHON_AI_URL = "http://localhost:8000/detect-service";
+const PYTHON_AI_URL = process.env.PYTHON_AI_URL || "http://localhost:8000/detect-service";
 
 router.post("/interpret", async (req, res) => {
     try {
@@ -20,7 +20,8 @@ router.post("/interpret", async (req, res) => {
 
         try {
             // STEP 1: Call the new Python Hybrid AI Service (The Single Source of Truth)
-            const pyRes = await axios.post(PYTHON_AI_URL, { text }, { timeout: 6000 });
+            // Timeout set to 30s to handle Render free tier cold starts
+            const pyRes = await axios.post(PYTHON_AI_URL, { text }, { timeout: 30000 });
             
             if (pyRes.data && pyRes.data.length > 0 && !pyRes.data[0].error) {
                 allMatches = pyRes.data;
@@ -38,7 +39,7 @@ router.post("/interpret", async (req, res) => {
             console.error("❌ Python AI Service Down:", pyErr.message);
             return res.status(503).json({ 
                 success: false, 
-                message: "AI Service temporarily unavailable. Please try again in a moment." 
+                message: "AI is waking up (cold start), please try again in 10-15 seconds! ☕" 
             });
         }
 

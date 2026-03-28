@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, Phone, ArrowRight, ShieldCheck, User, Lock } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { API_BASE } from '../config';
 
 const AuthModal = ({ isOpen, onClose, role = 'customer' }) => {
     const [isSignup, setIsSignup] = useState(false);
@@ -19,7 +20,7 @@ const AuthModal = ({ isOpen, onClose, role = 'customer' }) => {
 
         setLoading(true);
         try {
-            const url = isSignup ? 'http://localhost:5000/api/users/register' : 'http://localhost:5000/api/users/login';
+            const url = isSignup ? `${API_BASE}/api/users/register` : `${API_BASE}/api/users/login`;
             const payload = isSignup ? { name, phone, password, role } : { phone, password };
 
             const res = await axios.post(url, payload);

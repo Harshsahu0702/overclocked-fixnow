@@ -10,8 +10,9 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { API_BASE } from '../../config';
 
-const socket = io('http://localhost:5000');
+const socket = io(API_BASE);
 
 // Fix Leaflet marker icons
 import markerIcon from 'leaflet/dist/images/marker-icon.png';
@@ -68,28 +69,28 @@ const AdminDashboard = () => {
 
     const fetchStats = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/platform-stats');
+            const res = await axios.get(`${API_BASE}/api/admin/platform-stats`);
             setStats(res.data);
         } catch (err) { console.error(err); }
     };
 
     const fetchPartners = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/partners');
+            const res = await axios.get(`${API_BASE}/api/admin/partners`);
             setPartners(res.data.partners);
         } catch (err) { console.error(err); }
     };
 
     const fetchAllMissions = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/all-missions');
+            const res = await axios.get(`${API_BASE}/api/admin/all-missions`);
             setAllMissions(res.data.jobs);
         } catch (err) { console.error(err); }
     };
 
     const fetchOnlineWorkers = async () => {
         try {
-            const res = await axios.get('http://localhost:5000/api/admin/online-workers');
+            const res = await axios.get(`${API_BASE}/api/admin/online-workers`);
             const workersMap = {};
             res.data.workers.forEach(w => {
                 workersMap[w._id] = w.location.coordinates;
@@ -100,14 +101,14 @@ const AdminDashboard = () => {
 
     const handleVerify = async (profileId, status) => {
         try {
-            await axios.post('http://localhost:5000/api/admin/verify-partner', { profileId, status });
+            await axios.post(`${API_BASE}/api/admin/verify-partner`, { profileId, status });
             fetchPartners();
         } catch (err) { alert("Error verifying partner"); }
     };
 
     const handleForceOffline = async (userId) => {
         try {
-            await axios.post('http://localhost:5000/api/admin/force-offline', { userId });
+            await axios.post(`${API_BASE}/api/admin/force-offline`, { userId });
             fetchPartners();
             fetchOnlineWorkers();
         } catch (err) { alert("Error forcing offline"); }
@@ -116,7 +117,7 @@ const AdminDashboard = () => {
     const handleSelectPartner = async (partnerSummary) => {
         setSelectedRequest({ ...partnerSummary, isLoading: true });
         try {
-            const res = await axios.get(`http://localhost:5000/api/admin/partner/${partnerSummary._id}`);
+            const res = await axios.get(`${API_BASE}/api/admin/partner/${partnerSummary._id}`);
             if (res.data.success) {
                 setSelectedRequest(res.data.partner);
             }
