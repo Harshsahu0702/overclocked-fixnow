@@ -650,7 +650,10 @@ const HistoryView = ({ user, stats }) => {
     useEffect(() => {
         const fetchLedger = async () => {
             try {
-                const res = await axios.get(`http://localhost:5000/api/partners/ledger/${user._id}`);
+                const token = localStorage.getItem('token');
+                const res = await axios.get(`http://localhost:5000/api/partners/ledger/${user._id}`, {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
                 if (res.data.success) setLedger(res.data.jobs);
             } catch (e) { console.error(e); }
             finally { setLoading(false); }
@@ -1427,10 +1430,6 @@ const PartnerDashboard = () => {
                                 <span className={`text-sm font-black uppercase tracking-widest italic ${activeJob ? 'text-emerald-400' : 'text-blue-600'}`}>ELITE BHAIYA</span>
                             </div>
                         </div>
-                        <button className={`relative w-16 h-16 rounded-2xl border flex items-center justify-center transition-all group shadow-sm ${activeJob ? 'bg-white/10 border-white/10 hover:bg-white/20' : 'bg-white border-slate-100 hover:bg-slate-50'}`}>
-                            <Bell size={28} className={`group-hover:rotate-12 transition-transform ${activeJob ? 'text-white' : 'text-slate-400'}`} />
-                            <div className="absolute top-5 right-5 w-3 h-3 bg-red-500 rounded-full border-4 border-white shadow-2xl" />
-                        </button>
                     </div>
                 </header>
 
