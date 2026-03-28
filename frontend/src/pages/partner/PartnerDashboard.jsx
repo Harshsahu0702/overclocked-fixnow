@@ -536,22 +536,7 @@ const HistoryView = ({ user, stats }) => {
                         <h1 className="text-7xl font-[1000] italic tracking-tighter text-slate-900 leading-none">{(stats?.walletBalance || 0).toLocaleString('en-IN')}</h1>
                     </div>
                 </div>
-                <div className="flex flex-col gap-4 min-w-[220px]">
-                    <button className="w-full py-5 bg-black text-white rounded-2xl font-black text-lg uppercase italic shadow-2xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center gap-3">
-                        Withdraw <ArrowRight size={20} />
-                    </button>
-                    <div className="flex items-center justify-center gap-4">
-                        <div className="flex flex-col items-center">
-                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 leading-none">Total Logs</span>
-                            <span className="text-sm font-black text-black">{ledger.length}</span>
-                        </div>
-                        <div className="w-[1px] h-6 bg-slate-100" />
-                        <div className="flex flex-col items-center">
-                            <span className="text-[8px] font-black text-slate-300 uppercase tracking-widest mb-1 leading-none">Verified ID</span>
-                            <Shield size={12} className="text-emerald-500" />
-                        </div>
-                    </div>
-                </div>
+                
             </header>
 
             <div className="space-y-6">
