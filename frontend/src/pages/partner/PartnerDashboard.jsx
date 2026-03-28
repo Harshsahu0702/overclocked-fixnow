@@ -725,14 +725,10 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
                     </h3>
                 </div>
                 
-                <div className="grid grid-cols-2 gap-6 pt-8 border-t border-white/10 opacity-60">
-                    <div className="text-left">
-                        <p className="text-[8px] font-black uppercase tracking-widest mb-1">Agency Fee</p>
-                        <p className="text-sm font-black italic">₹20.00</p>
-                    </div>
-                    <div className="text-right">
-                        <p className="text-[8px] font-black uppercase tracking-widest mb-1">Security</p>
-                        <p className="text-sm font-black text-emerald-400 italic">ENCRYPTED</p>
+                <div className="pt-8 border-t border-white/10 opacity-60">
+                    <div className="text-center">
+                        <p className="text-[8px] font-black uppercase tracking-widest mb-1">Security Status</p>
+                        <p className="text-sm font-black text-emerald-400 italic">VERIFIED & ENCRYPTED</p>
                     </div>
                 </div>
             </div>

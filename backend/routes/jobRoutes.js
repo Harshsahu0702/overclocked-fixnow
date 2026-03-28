@@ -242,22 +242,22 @@ router.patch('/:id/status', async (req, res) => {
 
         if (status === 'COMPLETED') {
             job.endTime = new Date();
-            const profile = await PartnerProfile.findById(job.partnerId);
-            if (profile) {
-                profile.totalJobs += 1;
-                // 5% Platform Cut Applied (95% to Partner)
-                const totalAmount = (job.finalPrice || job.basePrice || 0);
-                const partnerEarnings = totalAmount * 0.95;
-                
-                profile.earnings += partnerEarnings;
-                profile.walletBalance += partnerEarnings;
-                await profile.save();
-                console.log(`💰 Platform Cut Applied: Mission ${job._id} (₹${totalAmount}) -> Partner: ₹${partnerEarnings.toFixed(2)}, Platform: ₹${(totalAmount * 0.05).toFixed(2)}`);
-            }
         }
 
         if (status === 'PAID') {
             await PartnerProfile.findByIdAndUpdate(job.partnerId, { workingStatus: 'AVAILABLE' });
+            
+            const profile = await PartnerProfile.findById(job.partnerId);
+            if (profile) {
+                profile.totalJobs += 1;
+                // Full amount goes to Partner (No platform cut)
+                const partnerEarnings = (job.finalPrice || job.basePrice || 0);
+                
+                profile.earnings = (profile.earnings || 0) + partnerEarnings;
+                profile.walletBalance = (profile.walletBalance || 0) + partnerEarnings;
+                await profile.save();
+                console.log(`💰 Payment Processed: Mission ${job._id} (₹${partnerEarnings}) -> Partner Earnings Updated (Full Amount)`);
+            }
         }
 
         if (status === 'CANCELLED' && job.partnerId) {
