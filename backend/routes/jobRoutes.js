@@ -321,4 +321,45 @@ router.patch('/:id/status', authMiddleware, checkProfileCompleted, async (req, r
     }
 });
 
+// DELETE Job (Permanent Abort/Cleanup)
+router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        const jobId = req.params.id;
+        const job = await Job.findById(jobId);
+        
+        if (!job) {
+            return res.status(404).json({ success: false, message: "Mission not found or already deleted." });
+        }
+
+        // 1. Reset Partner status if applicable
+        if (job.partnerId) {
+            await PartnerProfile.findByIdAndUpdate(job.partnerId, { workingStatus: 'AVAILABLE' });
+        }
+
+        // 2. Prepare payload for real-time update
+        const cId = job.customerId?.toString();
+        const pId = job.partnerId?.toString();
+        const payload = { jobId: job._id, status: 'CANCELLED', deleted: true };
+        
+        // 3. Emit sockets safely
+        try {
+            if (global.io) {
+                global.io.to(`job_${jobId}`).emit('status_changed', payload);
+                if (cId) global.io.to(`customer_${cId}`).emit('status_changed', payload);
+                if (pId) global.io.to(`partner_${pId}`).emit('status_changed', payload);
+            }
+        } catch (socketErr) {
+            console.error("Socket Emission Error during Delete:", socketErr);
+        }
+
+        // 4. Delete from DB
+        await Job.findByIdAndDelete(jobId);
+        
+        return res.json({ success: true, message: "Mission Aborted successfully." });
+    } catch (error) {
+        console.error("Job Delete Error:", error);
+        return res.status(500).json({ success: false, message: "Server error during abortion." });
+    }
+});
+
 module.exports = router;

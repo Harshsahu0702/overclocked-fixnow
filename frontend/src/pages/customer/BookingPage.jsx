@@ -69,6 +69,7 @@ const BookingPage = () => {
     const [jobDescription, setJobDescription] = useState('');
     const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
     const [awaitingPaymentConfirm, setAwaitingPaymentConfirm] = useState(false);
+    const [missionAbortedByBhaiya, setMissionAbortedByBhaiya] = useState(false);
 
     // Use ref to track activeJob for reconnect handler (avoids stale closures)
     const activeJobRef = useRef(activeJob);
@@ -152,15 +153,21 @@ const BookingPage = () => {
 
             console.log(`🔍 ID Check: Incoming[${incomingJobId}] Target[${currentJobId}] Status[${payload.status}]`);
 
-            // If it's a PAID status, we want to clear the overlay even if ID check is fuzzy
-            if (payload.status === 'PAID' || (payload.job && payload.job.status === 'PAID')) {
-                console.log("💰 Payment confirmed! Clearing overlay...");
+            // If a PAID status comes, we want to clear the overlay even if ID check is fuzzy
+            if (payload.status === 'PAID') {
                 setAwaitingPaymentConfirm(false);
-                alert("Mission Complete! Bhaiya has confirmed your payment. 🤝");
-
                 setActiveJob(null);
                 setViewState('idle');
-                navigate('/'); // RE-DIRECT TO LANDING PAGE
+                navigate('/');
+                alert("Mission Complete! 🤝");
+                return;
+            }
+
+            if (payload.deleted === true || payload.status === 'CANCELLED') {
+                setAwaitingPaymentConfirm(false);
+                setMissionAbortedByBhaiya(true);
+                setActiveJob(null);
+                setViewState('tracking');
                 return;
             }
 
@@ -320,7 +327,10 @@ const BookingPage = () => {
         if (!window.confirm("Sure you want to abort mission?")) return;
         setLoading(true);
         try {
-            await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+            const token = localStorage.getItem('token');
+            await axios.delete(`${API_BASE}/api/jobs/${activeJob._id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
             setActiveJob(null);
             setViewState('idle');
             setAiResult(null);
@@ -532,23 +542,25 @@ const BookingPage = () => {
                                         </div>
                                         <h2 className="text-7xl md:text-9xl font-[1000] uppercase italic tracking-tighter leading-[0.8] whitespace-pre-line">
                                             {
+                                                missionAbortedByBhaiya ? 'ERROR:\nMISSION\nABORTED!' :
                                                 activeJob.status === 'OFFERED' ? 'MISSION\nSENT!' :
-                                                    activeJob.status === 'ACCEPTED' ? 'YES!\nOTW!' :
-                                                        activeJob.status === 'ON_THE_WAY' ? 'HE IS\nNEAR!' :
-                                                            activeJob.status === 'IN_PROGRESS' ? 'WORK\nONGOING' :
-                                                                activeJob.status === 'COMPLETED' ? 'WORK\nDONE!' :
-                                                                    activeJob.status === 'CANCELLED' ? 'MISSION\nCANCELLED' : 'SUCCESS!'
+                                                activeJob.status === 'ACCEPTED' ? 'YES!\nOTW!' :
+                                                activeJob.status === 'ON_THE_WAY' ? 'HE IS\nNEAR!' :
+                                                activeJob.status === 'IN_PROGRESS' ? 'WORK\nONGOING' :
+                                                activeJob.status === 'COMPLETED' ? 'WORK\nDONE!' :
+                                                activeJob.status === 'CANCELLED' ? 'MISSION\nCANCELLED' : 'SUCCESS!'
                                             }
                                         </h2>
                                         <div className="flex flex-col gap-4 mt-6">
                                             <p className="text-yellow-400 font-extrabold uppercase italic tracking-[0.2em] text-xl">
                                                 {
+                                                    missionAbortedByBhaiya ? 'Bhaiya has aborted this mission due to technical or on-field issues.' :
                                                     activeJob.status === 'OFFERED' ? 'The job has been sent to all nearby bhiyas. Waiting for someone to accept...' :
-                                                        activeJob.status === 'ACCEPTED' ? 'Bhaiya is on his way' :
-                                                            activeJob.status === 'ON_THE_WAY' ? 'Bhaiya is almost there' :
-                                                                activeJob.status === 'IN_PROGRESS' ? 'Bhaiya is fixing it...' :
-                                                                    activeJob.status === 'COMPLETED' ? 'Please pay the Bhaiya' :
-                                                                        activeJob.status === 'CANCELLED' ? 'Mission was aborted' : 'Mission Accomplished'
+                                                    activeJob.status === 'ACCEPTED' ? 'Bhaiya is on his way' :
+                                                    activeJob.status === 'ON_THE_WAY' ? 'Bhaiya is almost there' :
+                                                    activeJob.status === 'IN_PROGRESS' ? 'Bhaiya is fixing it...' :
+                                                    activeJob.status === 'COMPLETED' ? 'Please pay the Bhaiya' :
+                                                    activeJob.status === 'CANCELLED' ? 'Mission was aborted' : 'Mission Accomplished'
                                                 }
                                             </p>
 
@@ -568,12 +580,18 @@ const BookingPage = () => {
                                                 </button>
                                             )}
 
-                                            {(activeJob.status === 'CANCELLED' || activeJob.status === 'PAID') && (
+                                            {(activeJob.status === 'CANCELLED' || activeJob.status === 'PAID' || missionAbortedByBhaiya) && (
                                                 <button
-                                                    onClick={() => { setActiveJob(null); setViewState('idle'); setAiResult(null); }}
+                                                    onClick={() => { 
+                                                        setActiveJob(null); 
+                                                        setViewState('idle'); 
+                                                        setAiResult(null); 
+                                                        setMissionAbortedByBhaiya(false);
+                                                        navigate('/'); 
+                                                    }}
                                                     className="w-fit px-12 py-6 bg-yellow-400 text-black rounded-[2rem] font-black text-xl uppercase italic tracking-widest shadow-[8px_8px_0_0_#000] border-4 border-black active:translate-y-2 active:shadow-none transition-all mt-4"
                                                 >
-                                                    START NEW SEARCH
+                                                    BACK TO HOME PAGE
                                                 </button>
                                             )}
 

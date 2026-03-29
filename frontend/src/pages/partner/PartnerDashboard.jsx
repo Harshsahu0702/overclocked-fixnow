@@ -578,7 +578,7 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                     </div>
                     <div className="text-center w-full">
                         <span className="text-[10px] font-black text-emerald-600 uppercase tracking-widest italic mb-2 block">Dossier Locked</span>
-                        <h4 className="text-3xl font-black italic uppercase tracking-tighter text-slate-900 mb-6 truncate">{activeJob?.customerId?.name || 'Customer'}</h4>
+                        <h4 className="text-xl font-black italic uppercase tracking-tighter text-slate-900 mb-6 truncate">{activeJob?.customerId?.name || 'Customer'}</h4>
                         <div className="flex gap-3">
                             <a href={`tel:${activeJob.customerId?.phone}`} className="flex-1 py-3 bg-emerald-500 text-white rounded-xl shadow-xl flex items-center justify-center hover:bg-emerald-600 transition-all hover:scale-110"><Phone size={18} fill="white" /></a>
                             <button className="flex-1 py-3 bg-blue-500 text-white rounded-xl shadow-xl flex items-center justify-center hover:bg-blue-600 transition-all hover:scale-110"><MessageSquare size={18} fill="white" /></button>
@@ -653,23 +653,25 @@ const MissionControl = ({ activeJob, currentPos, jobTimer, otpInput, setOtpInput
                     )}
 
                     <div className="flex gap-4">
-                        <button className="flex-1 py-5 bg-white/5 text-slate-500 text-xs font-black uppercase tracking-widest rounded-3xl hover:bg-white/10 transition-all border-2 border-white/5">Protocol</button>
+
                         <button
                             onClick={async () => {
-                                if (!confirm('ABORT MISSION?')) return;
+                                if (!confirm('ABORT MISSION? (DATA WILL BE DELETED)')) return;
                                 try {
-                                    const res = await axios.patch(`${API_BASE}/api/jobs/${activeJob._id}/status`, { status: 'CANCELLED' });
+                                    const token = localStorage.getItem('token');
+                                    const res = await axios.delete(`${API_BASE}/api/jobs/${activeJob._id}`, {
+                                        headers: { Authorization: `Bearer ${token}` }
+                                    });
                                     if (res.data.success) {
-                                        socket.emit('job_status_update', {
-                                            jobId: activeJob._id,
-                                            customerId: activeJob.customerId?._id || activeJob.customerId,
-                                            partnerId: activeJob.partnerId?._id || activeJob.partnerId,
-                                            status: 'CANCELLED',
-                                            job: res.data.job
-                                        });
-                                        updateJobStatus('CANCELLED');
+                                        setActiveJob(null);
+                                        fetchDashboard();
+                                    } else {
+                                        alert(res.data.message || 'Failed to abort');
                                     }
-                                } catch (err) { alert('Failed'); }
+                                } catch (err) { 
+                                    const msg = err.response?.data?.message || 'Network/Server Error';
+                                    alert('Error: ' + msg); 
+                                }
                             }}
                             className="px-12 py-5 bg-red-500/10 text-red-500 text-xs font-black uppercase tracking-widest rounded-3xl hover:bg-red-600 hover:text-white transition-all border-2 border-red-500/20 shadow-lg"
                         >
@@ -985,15 +987,15 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
             initial={{ scale: 0, rotate: -180 }}
             animate={{ scale: 1, rotate: 0 }}
             transition={{ type: 'spring', damping: 15, stiffness: 200 }}
-            className="w-28 h-28 bg-emerald-500 rounded-[2.5rem] flex items-center justify-center text-white mb-8 shadow-[0_25px_50px_-12px_rgba(16,185,129,0.5)] relative z-10 border-4 border-white"
+            className="w-20 h-20 bg-emerald-500 rounded-[2rem] flex items-center justify-center text-white mb-6 shadow-[0_25px_50px_-12px_rgba(16,185,129,0.5)] relative z-10 border-4 border-white"
         >
-            <Check size={50} strokeWidth={8} />
+            <Check size={40} strokeWidth={8} />
         </motion.div>
 
         {/* Headline */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="relative z-10">
-            <h2 className="text-5xl lg:text-6xl font-[1000] text-slate-900 uppercase italic tracking-tighter leading-tight mb-4">MISSION <br /> ACCOMPLISHED</h2>
-            <p className="text-slate-400 font-[1000] text-[10px] uppercase tracking-[0.5em] mb-10 italic">Tactical Objective Secured</p>
+            <h2 className="text-3xl lg:text-5xl font-[1000] text-slate-900 uppercase italic tracking-tighter leading-tight mb-2">MISSION <br /> ACCOMPLISHED</h2>
+            <p className="text-slate-400 font-[1000] text-[9px] uppercase tracking-[0.5em] mb-8 italic">Tactical Objective Secured</p>
         </motion.div>
 
         {/* Revenue Card */}
@@ -1009,10 +1011,10 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
             </div>
 
             <div className="relative z-10 py-2">
-                <p className="text-[9px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-6 italic">Personnel Earnings</p>
-                <div className="flex items-center justify-center gap-3 mb-10">
-                    <span className="text-4xl font-[1000] italic text-yellow-400/40">₹</span>
-                    <h3 className="text-7xl lg:text-8xl font-[1000] italic text-yellow-500 tracking-tighter leading-tight pr-2">
+                <p className="text-[8px] font-black text-yellow-500 uppercase tracking-[0.4em] mb-4 italic">Personnel Earnings</p>
+                <div className="flex items-center justify-center gap-3 mb-6">
+                    <span className="text-3xl font-[1000] italic text-yellow-400/40">₹</span>
+                    <h3 className="text-5xl lg:text-7xl font-[1000] italic text-yellow-500 tracking-tighter leading-tight pr-2">
                         {summaryJob?.finalPrice || summaryJob?.basePrice || '0'}
                     </h3>
                 </div>
@@ -1032,10 +1034,10 @@ const JobSummaryModal = ({ summaryJob, setSummaryJob }) => (
             animate={{ opacity: 1 }}
             transition={{ delay: 0.6 }}
             onClick={() => setSummaryJob(null)}
-            className="w-full max-w-xs lg:max-w-sm py-7 bg-slate-900 hover:bg-black text-white rounded-[2rem] font-[1000] text-2xl uppercase italic tracking-tighter shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 group"
+            className="w-full max-w-xs lg:max-w-sm py-5 bg-slate-900 hover:bg-black text-white rounded-[1.5rem] font-[1000] text-xl uppercase italic tracking-tighter shadow-2xl active:scale-95 transition-all flex items-center justify-center gap-4 group"
         >
             BACK TO RADAR
-            <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+            <ArrowRight size={20} className="group-hover:translate-x-2 transition-transform" />
         </motion.button>
 
         <p className="mt-8 text-[8px] font-black text-slate-300 uppercase tracking-[0.4em] italic opacity-50">Auth ID: {summaryJob?._id?.slice(-12).toUpperCase()}</p>
@@ -1370,6 +1372,7 @@ const PartnerDashboard = () => {
             // Optimistic Update
             setNewRequests(prev => prev.filter(r => r._id !== jobId));
             setActiveJob({ ...jobToAccept, status: 'ACCEPTED' });
+            setOtpInput('');
 
             const token = localStorage.getItem('token');
             const res = await axios.post(`${API_BASE}/api/jobs/${jobId}/accept`, {
@@ -1410,6 +1413,7 @@ const PartnerDashboard = () => {
             });
             if (res.data.success) {
                 setActiveJob(res.data.job);
+                if (status === 'IN_PROGRESS') setOtpInput('');
                 if (status === 'PAID') {
                     setSummaryJob(res.data.job);
                     setActiveJob(null);
@@ -1523,23 +1527,7 @@ const PartnerDashboard = () => {
                 </nav>
 
                 <div className="p-8 mt-auto space-y-6">
-                    {activeJob && (
-                        <motion.div initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} className="hidden lg:flex flex-col gap-5 p-6 bg-blue-50 border-2 border-blue-100 rounded-[2.5rem] shadow-2xl mb-4 relative overflow-hidden group">
-                            <div className="absolute top-0 right-0 p-4 opacity-[0.05] group-hover:rotate-12 transition-transform duration-700 text-blue-900"><Wrench size={80} /></div>
-                            <div className="flex items-center gap-4 relative z-10">
-                                <div className="w-12 h-12 bg-blue-600 rounded-[1.2rem] flex items-center justify-center text-white shadow-xl animate-pulse">
-                                    <Zap size={22} fill="white" />
-                                </div>
-                                <div className="flex-1 overflow-hidden">
-                                    <h4 className="text-xs font-black text-blue-900 uppercase tracking-tight truncate leading-none mb-1">{activeJob.service}</h4>
-                                    <span className="text-[7px] font-black uppercase tracking-[0.4em] text-blue-400 italic">STEP: {activeJob.status.replace(/_/g, ' ')}</span>
-                                </div>
-                            </div>
-                            <button onClick={() => { setActiveTab('home'); fetchDashboard(); }} className="w-full py-4 bg-black text-white rounded-2xl font-black text-[9px] uppercase italic tracking-[0.2em] shadow-xl hover:scale-105 active:scale-95 transition-all relative z-10">
-                                RESUME HUD
-                            </button>
-                        </motion.div>
-                    )}
+
 
                     <button onClick={handleLogout} className="hidden lg:flex w-full items-center gap-5 p-5 bg-red-50 hover:bg-red-100 border border-red-100 rounded-2xl transition-all group">
                         <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-red-500 group-hover:bg-red-500 group-hover:text-white transition-all shadow-sm">
